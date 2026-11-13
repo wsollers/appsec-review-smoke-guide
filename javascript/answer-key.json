@@ -1,0 +1,688 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "javascript",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-javascript",
+  "tag": "v1.0.0",
+  "commit": "84e3c01a2b312c87b6f2fe804b397990abf74388",
+  "build": {
+    "profile": "node",
+    "image": "audit-buildenv-typescript:local",
+    "command": "sh -c \"node node_modules/typescript/bin/tsc -p tsconfig.json --outDir /scratch/out\"",
+    "elapsed_seconds": 5.1,
+    "expected_build_units": 1,
+    "notes": "tsc 5.6.3 is vendored under node_modules/typescript (compiler bundle, ES library declarations and package metadata only, 6.4 MB, from https://registry.npmjs.org/typescript/-/typescript-5.6.3.tgz sha256 ef67f8d8ad895858024b7339d3e34bf112cae3c5db1f538c3079038b17ae30fa). tsconfig uses allowJs without checkJs and lib es2020 with types [], plus src/types/node-shim.d.ts (declare module \"fs\") so store.ts compiles without @types/node. The fixture imports (express, pg, node-serialize, readline-sync) are not declared and never resolved. The repository is mounted read-only; tsc writes only to /scratch/out (7 files). Not tagged and not pushed at the time of authoring: the tag and repository URL are the intended ones."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-89",
+      "title": "SQL injection through buildQuery into pg pool.query",
+      "file": "src/app.js",
+      "function": "handleSql",
+      "span": {
+        "start_line": 15,
+        "end_line": 18
+      },
+      "source": {
+        "file": "src/app.js",
+        "function": "handleSql",
+        "line": 17,
+        "api": "req.query.id"
+      },
+      "sink": {
+        "api": "pool.query",
+        "line": 17
+      },
+      "fixture_case": "remote_to_sql",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-78",
+      "title": "command injection through the unguarded nslookup exec",
+      "file": "src/app.js",
+      "function": "handleExec",
+      "span": {
+        "start_line": 20,
+        "end_line": 26
+      },
+      "source": {
+        "file": "src/app.js",
+        "function": "handleExec",
+        "line": 21,
+        "api": "req.query.host"
+      },
+      "sink": {
+        "api": "child_process.exec",
+        "line": 25
+      },
+      "fixture_case": "remote_to_command",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery through http.get",
+      "file": "src/app.js",
+      "function": "handleFetch",
+      "span": {
+        "start_line": 33,
+        "end_line": 36
+      },
+      "source": {
+        "file": "src/app.js",
+        "function": "handleFetch",
+        "line": 34,
+        "api": "req.query.url"
+      },
+      "sink": {
+        "api": "http.get",
+        "line": 35
+      },
+      "fixture_case": "remote_to_ssrf",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-502",
+      "title": "unsafe deserialization of the request body with node-serialize",
+      "file": "src/app.js",
+      "function": "handleRestore",
+      "span": {
+        "start_line": 38,
+        "end_line": 41
+      },
+      "source": {
+        "file": "src/app.js",
+        "function": "handleRestore",
+        "line": 39,
+        "api": "req.body"
+      },
+      "sink": {
+        "api": "node-serialize.unserialize",
+        "line": 40
+      },
+      "fixture_case": "remote_to_deserialization",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-79",
+      "title": "reflected cross-site scripting through res.send",
+      "file": "src/app.js",
+      "function": "handleEcho",
+      "span": {
+        "start_line": 43,
+        "end_line": 46
+      },
+      "source": {
+        "file": "src/app.js",
+        "function": "handleEcho",
+        "line": 44,
+        "api": "req.query.name"
+      },
+      "sink": {
+        "api": "res.send",
+        "line": 45
+      },
+      "fixture_case": "remote_to_html",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-78",
+      "title": "command injection from argv, environment and readline-sync into execSync",
+      "file": "src/cli.js",
+      "function": "runCommand",
+      "span": {
+        "start_line": 4,
+        "end_line": 6
+      },
+      "source": {
+        "file": "src/cli.js",
+        "function": "runFromArgs / runFromEnv / askAndRun",
+        "line": 9,
+        "api": "process.argv (line 9), process.env (line 13), readlineSync.question (line 17)"
+      },
+      "sink": {
+        "api": "child_process.execSync",
+        "line": 5
+      },
+      "fixture_case": "argv_source, env_source, api_source_and_log_sink",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-601",
+      "title": "open redirect through the go op",
+      "file": "src/server.js",
+      "function": "handleApi",
+      "span": {
+        "start_line": 38,
+        "end_line": 95
+      },
+      "source": {
+        "file": "src/server.js",
+        "function": "handleApi",
+        "line": 58,
+        "api": "req.query.next"
+      },
+      "sink": {
+        "api": "res.redirect",
+        "line": 58
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C8",
+      "cwe": "CWE-117",
+      "title": "log injection through the audit route",
+      "file": "src/server.js",
+      "function": "handleAudit",
+      "span": {
+        "start_line": 31,
+        "end_line": 34
+      },
+      "source": {
+        "file": "src/server.js",
+        "function": "handleAudit",
+        "line": 32,
+        "api": "req.query.user, req.query.page"
+      },
+      "sink": {
+        "api": "console.log",
+        "line": 32
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C9",
+      "cwe": "CWE-730",
+      "title": "regular expression injection through the filter route",
+      "file": "src/filter.js",
+      "function": "handleFilter",
+      "span": {
+        "start_line": 5,
+        "end_line": 14
+      },
+      "source": {
+        "file": "src/filter.js",
+        "function": "handleFilter",
+        "line": 6,
+        "api": "req.query.pattern"
+      },
+      "sink": {
+        "api": "new RegExp",
+        "line": 6
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "lodash",
+      "version": "4.17.15",
+      "ecosystem": "npm",
+      "osv": "GHSA-p6mc-m468-83gw",
+      "cve": "CVE-2020-8203",
+      "fixed_version": "4.17.19",
+      "other_advisories": [
+        {
+          "osv": "GHSA-35jh-r3h4-6jhm",
+          "cve": "CVE-2021-23337",
+          "fixed_version": "4.17.21"
+        },
+        {
+          "osv": "GHSA-29mw-wpgm-hmr9",
+          "cve": "CVE-2020-28500",
+          "fixed_version": "4.17.21"
+        },
+        {
+          "osv": "GHSA-xxjr-mmjv-4gpg",
+          "cve": "CVE-2025-13465",
+          "fixed_version": "4.17.23"
+        },
+        {
+          "osv": "GHSA-r5fr-rjxr-66jc",
+          "cve": "CVE-2026-4800",
+          "fixed_version": "4.18.0"
+        }
+      ],
+      "location": "package.json dependencies; package-lock.json node_modules/lodash",
+      "relation": "direct",
+      "visible_to": [
+        "syft package-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "ws",
+      "version": "7.4.5",
+      "ecosystem": "npm",
+      "osv": "GHSA-6fc8-4gx4-v693",
+      "cve": "CVE-2021-32640",
+      "fixed_version": "7.4.6",
+      "other_advisories": [
+        {
+          "osv": "GHSA-3h5v-q93c-6h6q",
+          "cve": "CVE-2024-37890",
+          "fixed_version": "7.5.10"
+        },
+        {
+          "osv": "GHSA-96hv-2xvq-fx4p",
+          "cve": "CVE-2026-48779",
+          "fixed_version": "7.5.11"
+        }
+      ],
+      "location": "package.json dependencies; package-lock.json node_modules/ws",
+      "relation": "direct",
+      "visible_to": [
+        "syft package-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "minimist",
+      "version": "0.0.8",
+      "ecosystem": "npm",
+      "osv": "GHSA-vh95-rmgr-6w4m",
+      "cve": "CVE-2020-7598",
+      "fixed_version": "0.2.1",
+      "other_advisories": [
+        {
+          "osv": "GHSA-xvch-5gv4-984h",
+          "cve": "CVE-2021-44906",
+          "fixed_version": "0.2.4"
+        }
+      ],
+      "location": "package-lock.json node_modules/minimist, required by mkdirp 0.5.1 (clean OSV record)",
+      "relation": "transitive",
+      "visible_to": [
+        "syft package-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in runReport",
+      "file": "src/server.js",
+      "function": "runReport",
+      "introduced_commit": "02bd03e51060abd02f0587d8504faaea3995fde7",
+      "introduced_span": {
+        "start_line": 9,
+        "end_line": 11
+      },
+      "introduced_sink": {
+        "api": "child_process.execSync",
+        "line": 10
+      },
+      "fixed_commit": "cb812c1eb2da96aa0f74fb475872f1a51c205f1e",
+      "head_span": {
+        "start_line": 13,
+        "end_line": 21
+      },
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in readTemplate",
+      "file": "src/server.js",
+      "function": "readTemplate",
+      "introduced_commit": "b0ae5efd926737c817a37545a51bf29017ba6b6b",
+      "introduced_span": {
+        "start_line": 17,
+        "end_line": 19
+      },
+      "introduced_sink": {
+        "api": "fs.readFileSync",
+        "line": 18
+      },
+      "fixed_commit": "2b2d8e170f2b3d3f2c250eedc782ba3131793ef8",
+      "head_span": {
+        "start_line": 25,
+        "end_line": 28
+      },
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers basename (src/server.js line 26) dominating readFileSync (line 27)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "node-fetch",
+      "ecosystem": "npm",
+      "vulnerable_version": "2.6.0",
+      "fixed_version": "2.6.7",
+      "osv": "GHSA-r683-j2x4-v87g",
+      "cve": "CVE-2022-0235",
+      "also_fixed": [
+        {
+          "osv": "GHSA-w7rc-rwvf-8q5r",
+          "cve": "CVE-2020-15168",
+          "fixed_version": "2.6.1"
+        }
+      ],
+      "introduced_commit": "cae8bfbccb0befa018f704bd76e3740f4d6247d4",
+      "fixed_commit": "7f95a0aff215078e7e777aa60031f3dd61fe7282",
+      "head_transitives": [
+        "whatwg-url 5.0.0",
+        "tr46 0.0.3",
+        "webidl-conversions 3.0.1"
+      ],
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "src/helpers.js",
+      "function": "versionProbe",
+      "span": {
+        "start_line": 5,
+        "end_line": 7
+      },
+      "flagged_by": [
+        "appsec-review.javascript-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand: eval(\"1 + 1\") takes a string literal; reachable from the version op but no dataflow_path reaches the sink",
+        "location": {
+          "file": "src/helpers.js",
+          "line": 6
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "src/helpers.js",
+      "function": "evalKnown",
+      "span": {
+        "start_line": 12,
+        "end_line": 17
+      },
+      "flagged_by": [
+        "appsec-review.javascript-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "expr === \"2 * 21\" dominates the sink, polarity true_branch, constrains_sink_operand, comparison_operator ===; reached from req.query.expr through the calc op",
+        "location": {
+          "file": "src/helpers.js",
+          "line": 13
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "src/helpers.js",
+      "function": "fragmentFor",
+      "span": {
+        "start_line": 21,
+        "end_line": 24
+      },
+      "flagged_by": [
+        "appsec-review.javascript-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "escape (a catalog sanitizer API) on the only path from req.query.tag (bookmark op) to the eval sink; the escaped text cannot contain a quote, backslash, bracket or parenthesis, so it stays inside the string literal",
+        "location": {
+          "file": "src/helpers.js",
+          "line": 22
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "src/helpers.js",
+      "function": "legacyEval",
+      "span": {
+        "start_line": 27,
+        "end_line": 29
+      },
+      "flagged_by": [
+        "appsec-review.javascript-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: module-private function with no callers and no export, so no dataflow_path reaches the sink",
+        "location": {
+          "file": "src/helpers.js",
+          "line": 28
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-5",
+      "file": "src/helpers.js",
+      "function": "probeInsecure",
+      "span": {
+        "start_line": 32,
+        "end_line": 34
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.privilege_shift.node-tls-verification-disabled"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: module-private function with no callers and no export; the rejectUnauthorized: false option object is never passed to a live request",
+        "location": {
+          "file": "src/helpers.js",
+          "line": 33
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/server.js",
+    "function": "handleApi",
+    "cyclomatic": 25,
+    "span": {
+      "start_line": 38,
+      "end_line": 95
+    },
+    "decisions": {
+      "if": 12,
+      "boolean": 6,
+      "case": 3,
+      "loop": 1,
+      "ternary": 2
+    },
+    "holds": "TP-C7",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/javascript-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "source_paths": {
+      "app.js": "src/app.js",
+      "cli.js": "src/cli.js",
+      "store.ts": "src/store.ts"
+    },
+    "line_numbers_moved": false,
+    "adjustment": null,
+    "notes": "The fixture cites paths relative to the fixture's source/ directory (app.js, cli.js, store.ts); in the target they live under src/ with identical bytes, so every cited line and column is unchanged."
+  },
+  "language_matrix": {
+    "languages": [
+      "JavaScript",
+      "TypeScript"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "opengrep",
+      "syft",
+      "grype",
+      "osv-scanner",
+      "tree-sitter"
+    ]
+  },
+  "history": {
+    "commits": 38,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-05-12",
+    "last_date": "2026-09-09",
+    "fix_commits": [
+      "cb812c1eb2da96aa0f74fb475872f1a51c205f1e",
+      "2b2d8e170f2b3d3f2c250eedc782ba3131793ef8"
+    ],
+    "upgrade_commit": "7f95a0aff215078e7e777aa60031f3dd61fe7282",
+    "introducing_commits": {
+      "FX-C1": "02bd03e51060abd02f0587d8504faaea3995fde7",
+      "FX-C2": "b0ae5efd926737c817a37545a51bf29017ba6b6b",
+      "FX-D1": "cae8bfbccb0befa018f704bd76e3740f4d6247d4"
+    },
+    "hardening_review_commit": "e37fe319881a8558bbe682fd5cc484eda8718159",
+    "rename": {
+      "from": "src/search.js",
+      "to": "src/filter.js",
+      "commit": "e20a6fe80e7456c138fec42d77f415425f44ea64"
+    },
+    "revert": {
+      "reverted_commit": "f02b9b311be39fa6aa85a4c648b3139368d559f1",
+      "revert_commit": "26ff3b4a9172a69313ec77fd235dfae2d7cb5fa9",
+      "reapply_commit": "6c073b244b7e0c620a9a55eb25856075720b5e2a"
+    },
+    "not_exploitable_commit": {
+      "commit": "b60c119b4793a344f7aba903175faa2b722e5770",
+      "about": "FP-2"
+    },
+    "highest_churn_file": "src/server.js",
+    "churn_top5": {
+      "src/server.js": 19,
+      "src/helpers.js": 5,
+      "package.json": 5,
+      "package-lock.json": 5,
+      "CHANGELOG.md": 5
+    },
+    "vendoring_commits": [
+      "e1391648025f1cd701a104296a4b280b64a50008"
+    ],
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "build_exit": 0,
+    "build_elapsed_seconds": 5.1,
+    "syft_reported": [
+      "appsec-review-smoke-javascript 1.0.0",
+      "lodash 4.17.15",
+      "minimist 0.0.8",
+      "mkdirp 0.5.1",
+      "node-fetch 2.6.7",
+      "tr46 0.0.3",
+      "webidl-conversions 3.0.1",
+      "whatwg-url 5.0.0",
+      "ws 7.4.5"
+    ],
+    "syft_not_reported": [
+      "typescript 5.6.3 (devDependency in package-lock.json and vendored under node_modules/typescript; Syft's directory-source lock cataloger omits dev dependencies and does not read node_modules package.json files)"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4",
+      "FP-5"
+    ],
+    "semgrep_unflagged_false_positives": [],
+    "semgrep_total_findings_outside_vendored_trees": 5,
+    "complexity_measured": 25,
+    "fixture_files_byte_identical": true
+  },
+  "expected_gaps": [
+    {
+      "gap": "range_fact not_applicable",
+      "reason": "JavaScript has no integral range semantics; every sink gets a not_applicable range row (fixture case range_not_applicable)",
+      "affects": []
+    },
+    {
+      "gap": "no SEI CERT rules for JavaScript",
+      "reason": "rules/sei-cert/rules has only c, cpp and java; the false positives are flagged by rules/semgrep/security.yml and review-signals.yml only",
+      "affects": [
+        "FP-1",
+        "FP-2",
+        "FP-3",
+        "FP-4",
+        "FP-5"
+      ]
+    },
+    {
+      "gap": "fixture imports unresolved",
+      "reason": "express, pg, node-serialize and readline-sync are imported by the fixture modules but deliberately not declared in package.json; CodeQL models them by import name, tsc does not resolve JavaScript imports with checkJs off",
+      "affects": [
+        "TP-C1",
+        "TP-C2",
+        "TP-C3",
+        "TP-C4",
+        "TP-C5",
+        "TP-C6"
+      ]
+    },
+    {
+      "gap": "typescript 5.6.3 absent from the SBOM",
+      "reason": "dev dependency; see verification.syft_not_reported. Not a planted item; its OSV record is clean",
+      "affects": []
+    }
+  ],
+  "substitutions": [
+    {
+      "planned": "fixed-in-history dependency from the candidate list (minimist 1.2.5, qs 6.5.2, ws 7.4.5, hoek 4.2.0)",
+      "actual": "node-fetch 2.6.0 upgraded to 2.6.7",
+      "reason": "qs 6.5.3 and ws 7.4.6 still have later OSV records (qs < 6.14.1 and < 6.16.0; ws < 7.5.10 and < 7.5.11), hoek 4.2.0 carries GHSA-c429-5p7v-vgjp with no fixed version, and minimist 1.2.6 would collide with the transitive minimist 0.0.8 (TP-D3) under the same package name; node-fetch 2.6.7 and its three transitives have no OSV record"
+    },
+    {
+      "planned": "transitive true positive",
+      "actual": "minimist 0.0.8 via mkdirp 0.5.1",
+      "reason": "mkdirp 0.5.1 has a clean OSV record and pins exactly minimist 0.0.8, so the lockfile records the vulnerable version only as a transitive pin"
+    }
+  ],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "84e3c01a2b312c87b6f2fe804b397990abf74388"
+  }
+}

@@ -1,0 +1,557 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "php",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-php",
+  "tag": "v1.0.0",
+  "commit": "ef0c942de7d2b109351075b5275c1308b98bb892",
+  "build": {
+    "profile": "php",
+    "image": "audit-buildenv-php:local",
+    "command": "sh -c 'for f in $(find public src -name \"*.php\"); do php -l \"$f\" || exit 1; done'",
+    "elapsed_seconds": 4.8,
+    "expected_build_units": 1,
+    "notes": "php -l syntax check over public/ and src/ (PHP 8.3.6); composer.lock dependencies are never installed and no composer command runs at build time. The image lacks ext-curl and pdo_sqlite, which php -l does not need. Repository mounted read-only; nothing written."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-601",
+      "title": "open redirect through the redirect action",
+      "file": "src/handler.php",
+      "function": "handle_request",
+      "span": {
+        "start_line": 72,
+        "end_line": 73
+      },
+      "source": {
+        "file": "src/handler.php",
+        "function": "handle_request",
+        "line": 72,
+        "api": "$_GET['return_to']"
+      },
+      "sink": {
+        "api": "header",
+        "line": 73
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in serve_template",
+      "file": "src/handler.php",
+      "function": "serve_template",
+      "span": {
+        "start_line": 40,
+        "end_line": 44
+      },
+      "source": {
+        "file": "src/handler.php",
+        "function": "handle_request",
+        "line": 69,
+        "api": "$_GET['name']"
+      },
+      "sink": {
+        "api": "file_get_contents",
+        "line": 42
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-611",
+      "title": "XML external entity expansion in parse_manifest",
+      "file": "src/manifest.php",
+      "function": "parse_manifest",
+      "span": {
+        "start_line": 7,
+        "end_line": 18
+      },
+      "source": {
+        "file": "src/handler.php",
+        "function": "handle_request",
+        "line": 76,
+        "api": "file_get_contents('php://input')"
+      },
+      "sink": {
+        "api": "simplexml_load_string",
+        "line": 9,
+        "detail": "LIBXML_NOENT"
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-117",
+      "title": "log injection in audit",
+      "file": "src/handler.php",
+      "function": "audit",
+      "span": {
+        "start_line": 47,
+        "end_line": 50
+      },
+      "source": {
+        "file": "src/handler.php",
+        "function": "handle_request",
+        "line": 99,
+        "api": "$_SERVER['HTTP_USER_AGENT'] and $_GET['action'] (line 56)"
+      },
+      "sink": {
+        "api": "file_put_contents",
+        "line": 49
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-89",
+      "title": "SQL injection from show_user through run_query (fixture case remote_to_sql)",
+      "file": "src/synthetic.php",
+      "function": "show_user",
+      "span": {
+        "start_line": 15,
+        "end_line": 20
+      },
+      "source": {
+        "file": "src/synthetic.php",
+        "function": "show_user",
+        "line": 17,
+        "api": "$_GET['name']"
+      },
+      "sink": {
+        "api": "PDO::query",
+        "line": 11,
+        "function": "run_query"
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-78",
+      "title": "command injection in ping_host (fixture case remote_to_command, unguarded sink)",
+      "file": "src/synthetic.php",
+      "function": "ping_host",
+      "span": {
+        "start_line": 22,
+        "end_line": 30
+      },
+      "source": {
+        "file": "src/synthetic.php",
+        "function": "ping_host",
+        "line": 24,
+        "api": "$_GET['host']"
+      },
+      "sink": {
+        "api": "system",
+        "line": 28
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery in fetch_url (fixture case remote_to_ssrf)",
+      "file": "src/synthetic.php",
+      "function": "fetch_url",
+      "span": {
+        "start_line": 39,
+        "end_line": 44
+      },
+      "source": {
+        "file": "src/synthetic.php",
+        "function": "fetch_url",
+        "line": 41,
+        "api": "$_POST['url']"
+      },
+      "sink": {
+        "api": "file_get_contents",
+        "line": 42
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C8",
+      "cwe": "CWE-502",
+      "title": "unsafe deserialization in load_blob (fixture case remote_to_deserialization)",
+      "file": "src/synthetic.php",
+      "function": "load_blob",
+      "span": {
+        "start_line": 46,
+        "end_line": 51
+      },
+      "source": {
+        "file": "src/synthetic.php",
+        "function": "load_blob",
+        "line": 48,
+        "api": "file_get_contents('php://input')"
+      },
+      "sink": {
+        "api": "unserialize",
+        "line": 49
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "guzzlehttp/guzzle",
+      "version": "7.4.0",
+      "ecosystem": "Packagist",
+      "osv": "GHSA-cwmx-hcrq-mhc3",
+      "cve": "CVE-2022-29248",
+      "fixed_version": "7.4.3",
+      "location": "composer.lock (direct require in composer.json)",
+      "visible_to": [
+        "syft php-composer cataloger (composer.lock)",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [
+        "the build (never installed, never required)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "twig/twig",
+      "version": "3.3.0",
+      "ecosystem": "Packagist",
+      "osv": "GHSA-5mv2-rx3q-4w2v",
+      "cve": "CVE-2022-23614",
+      "fixed_version": "3.3.8",
+      "location": "composer.lock (direct require in composer.json)",
+      "visible_to": [
+        "syft php-composer cataloger (composer.lock)",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [
+        "the build (never installed, never required)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "guzzlehttp/psr7",
+      "version": "2.1.0",
+      "ecosystem": "Packagist",
+      "osv": "GHSA-q7rv-6hp3-vh96",
+      "cve": "CVE-2022-24775",
+      "fixed_version": "2.1.1",
+      "location": "composer.lock (transitive of guzzlehttp/guzzle 7.4.0; held at 2.1.0 by composer.json conflict \"guzzlehttp/psr7\": \">2.1.0\")",
+      "visible_to": [
+        "syft php-composer cataloger (composer.lock)",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [
+        "the build (never installed, never required)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in run_tool",
+      "file": "src/handler.php",
+      "function": "run_tool",
+      "introduced_commit": "c02ea2132da2228977dad86ef6b3784e348b1d9c",
+      "introduced_span": {
+        "start_line": 12,
+        "end_line": 16
+      },
+      "fixed_commit": "64e75c0cefd2221367183d6b2e829093d0f0e0b5",
+      "fixed_span": {
+        "start_line": 16,
+        "end_line": 28
+      },
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in read_asset",
+      "file": "src/handler.php",
+      "function": "read_asset",
+      "introduced_commit": "368d3b57e71d7fc8354792c83ded9e47536dfc28",
+      "introduced_span": {
+        "start_line": 20,
+        "end_line": 24
+      },
+      "fixed_commit": "9b41a18a76f9db6635620b6e36e85b495da80929",
+      "fixed_span": {
+        "start_line": 32,
+        "end_line": 37
+      },
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers basename (src/handler.php line 34 dominates file_get_contents at line 35)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "phpmailer/phpmailer",
+      "ecosystem": "Packagist",
+      "vulnerable_version": "6.4.0",
+      "fixed_version": "6.5.0",
+      "osv": "GHSA-77mr-wc79-m8j3",
+      "cve": "CVE-2021-3603",
+      "also": [
+        "GHSA-7q44-r25x-wm4q / CVE-2021-34551 (fixed 6.5.0)",
+        "GHSA-m298-fh5c-jc66 / CVE-2020-36326 (fixed 6.4.1)"
+      ],
+      "introduced_commit": "d9f97512122d89374a566fd7fe8542dfb94a2f5e",
+      "fixed_commit": "ee43122b2a7ab9bdc11fe193f38f23d579f16e84",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "src/store.php",
+      "function": "load_settings",
+      "span": {
+        "start_line": 12,
+        "end_line": 12
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.php-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand: SETTINGS_TABLE is a compile-time constant (line 6); no source reaches the concatenation",
+        "location": {
+          "file": "src/store.php",
+          "line": 6
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "src/store.php",
+      "function": "list_settings",
+      "span": {
+        "start_line": 24,
+        "end_line": 24
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.php-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "in_array($order, SORTABLE, true) with an early return dominates the sink, polarity true_branch, constrains_sink_operand",
+        "location": {
+          "file": "src/store.php",
+          "line": 21
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "src/store.php",
+      "function": "search_users",
+      "span": {
+        "start_line": 31,
+        "end_line": 31
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.php-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "PDO::quote lies on the only path from $name to the sink and dominates it",
+        "location": {
+          "file": "src/store.php",
+          "line": 31
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "src/legacy.php",
+      "function": "legacy_restore",
+      "span": {
+        "start_line": 9,
+        "end_line": 9
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.php-unserialize-request"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: legacy_restore has no callers and src/legacy.php is never required, so no entry point reaches the sink",
+        "location": {
+          "file": "src/legacy.php",
+          "line": 7
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-5",
+      "file": "src/legacy.php",
+      "function": "legacy_probe",
+      "span": {
+        "start_line": 17,
+        "end_line": 17
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.privilege_shift.php-curl-verification-disabled"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: legacy_probe has no callers and src/legacy.php is never required, so no entry point reaches the call",
+        "location": {
+          "file": "src/legacy.php",
+          "line": 14
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/handler.php",
+    "function": "handle_request",
+    "cyclomatic": 32,
+    "span": {
+      "start_line": 53,
+      "end_line": 101
+    },
+    "decisions": {
+      "if": 11,
+      "boolean": 6,
+      "null_coalescing": 8,
+      "ternary": 6
+    },
+    "holds": "TP-C1",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true
+  },
+  "graph_facts": {
+    "fixture": "hand-authored (no appsec-review fixture exists for PHP); the file is src/synthetic.php of this repository",
+    "expected_facts_file": "expected-facts.json",
+    "line_numbers_moved": false,
+    "adjustment": "expected-facts.json is hand-authored against src/synthetic.php at the tagged head in the appsec-review/graph-export-expected-facts/1 schema; PHP has no CodeQL extractor, so its dataflow producers in appsec-review are Semgrep taint and Psalm."
+  },
+  "language_matrix": {
+    "languages": [
+      "PHP"
+    ],
+    "tools": [
+      "semgrep",
+      "opengrep",
+      "psalm",
+      "phpstan",
+      "phpcs",
+      "syft",
+      "grype",
+      "osv-scanner"
+    ]
+  },
+  "history": {
+    "commits": 34,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-04-14",
+    "last_date": "2026-08-23",
+    "fix_commits": [
+      "64e75c0cefd2221367183d6b2e829093d0f0e0b5",
+      "9b41a18a76f9db6635620b6e36e85b495da80929"
+    ],
+    "upgrade_commit": "ee43122b2a7ab9bdc11fe193f38f23d579f16e84",
+    "rename": {
+      "from": "src/import.php",
+      "to": "src/manifest.php",
+      "commit": "53f9024c91118441cde12c0abac9f236cf88d2ec"
+    },
+    "revert": {
+      "reverted_commit": "b765daae723b8459febee7fad179a47b74e10a64",
+      "revert_commit": "f6b2e01fadc50259985648f70704b1fb869fede7",
+      "reapply_commit": "1eec7af94b39ed4ae2bbf43e007d436226d1e268"
+    },
+    "not_exploitable_commit": {
+      "commit": "3dab94ab89a7ed5c9ca90a272d58df23f2946d8d",
+      "about": "FP-2"
+    },
+    "hardening_review_commit": "1893d982b5581d1cb98caecf0e14f22e09705da2",
+    "highest_churn_file": "src/handler.php",
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "syft_reported": [
+      "guzzlehttp/guzzle 7.4.0",
+      "guzzlehttp/promises 1.5.3",
+      "guzzlehttp/psr7 2.1.0",
+      "phpmailer/phpmailer v6.5.0",
+      "psr/http-client 1.0.3",
+      "psr/http-factory 1.1.0",
+      "psr/http-message 1.1",
+      "ralouphie/getallheaders 3.0.3",
+      "symfony/deprecation-contracts v2.5.4",
+      "symfony/polyfill-ctype v1.37.0",
+      "symfony/polyfill-mbstring v1.43.3",
+      "twig/twig v3.3.0"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4",
+      "FP-5"
+    ],
+    "semgrep_unflagged_false_positives": []
+  },
+  "expected_gaps": [
+    {
+      "gap": "no CodeQL graph export for PHP",
+      "reason": "PHP has no CodeQL extractor; code-intelligence facts come from Semgrep taint and Psalm, and expected-facts.json is hand-authored rather than a recording",
+      "affects": [
+        "TP-C5",
+        "TP-C6",
+        "TP-C7",
+        "TP-C8"
+      ]
+    },
+    {
+      "gap": "transitive packages besides psr7 are clean",
+      "reason": "OSV queried for every locked version: guzzlehttp/promises 1.5.3, psr/http-client 1.0.3, psr/http-factory 1.1.0, psr/http-message 1.1, ralouphie/getallheaders 3.0.3, symfony/deprecation-contracts 2.5.4, symfony/polyfill-ctype 1.37.0, symfony/polyfill-mbstring 1.43.3 have no records; guzzle 7.4.0, psr7 2.1.0 and twig 3.3.0 also carry later advisories (2022-2026) beyond the one named per item",
+      "affects": []
+    }
+  ],
+  "substitutions": [
+    {
+      "planned": "monolog/monolog 1.23.0",
+      "actual": "guzzlehttp/guzzle 7.4.0",
+      "reason": "OSV returns no record for monolog/monolog 1.23.0 (queried 2026-11-13); guzzle 7.4.0 has GHSA-cwmx-hcrq-mhc3 / CVE-2022-29248 fixed in 7.4.3"
+    }
+  ],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "ef0c942de7d2b109351075b5275c1308b98bb892"
+  }
+}

@@ -1,0 +1,626 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "rust",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-rust",
+  "tag": "v1.0.0",
+  "commit": "6a11cc9677028a0eba366177019e599f35bcc978",
+  "build": {
+    "profile": "rust",
+    "image": "audit-buildenv-rust-wasm:local",
+    "command": "cargo build --offline --locked --target-dir /scratch/target",
+    "elapsed_seconds": 1.9,
+    "expected_build_units": 1,
+    "notes": "One Cargo package with two [[bin]] targets (rust-synthetic = the fixture src/main.rs, smoke-server). CARGO_HOME under /scratch; the tree is mounted read-only. .cargo/config.toml replaces crates.io with the vendor/ directory source; every Cargo.lock package (including winapi for Windows targets and the autocfg build dependency) is vendored with a .cargo-checksum.json carrying the real .crate sha256, and the three path stand-ins carry {\"package\": null}. The four planted crates are optional dependencies behind features that are never enabled, so cargo resolves and checks them but compiles none; only log 0.4.22 and the stand-ins compile."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-89",
+      "title": "SQL injection through the stored request body",
+      "file": "src/main.rs",
+      "function": "SqlStore::save",
+      "span": {
+        "start_line": 18,
+        "end_line": 21
+      },
+      "source": {
+        "file": "src/main.rs",
+        "function": "fetch_body",
+        "line": 37,
+        "api": "reqwest::blocking::get"
+      },
+      "sink": {
+        "api": "rusqlite::Connection::execute",
+        "line": 20,
+        "model": "sql-injection"
+      },
+      "fixture_case": "remote_to_sql",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-78",
+      "title": "command injection through the request body",
+      "file": "src/main.rs",
+      "function": "run_tool",
+      "span": {
+        "start_line": 41,
+        "end_line": 43
+      },
+      "source": {
+        "file": "src/main.rs",
+        "function": "fetch_body",
+        "line": 37,
+        "api": "reqwest::blocking::get"
+      },
+      "sink": {
+        "api": "std::process::Command::new",
+        "line": 42,
+        "model": "command-injection"
+      },
+      "fixture_case": "remote_to_command",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery through the request body",
+      "file": "src/main.rs",
+      "function": "fetch_url",
+      "span": {
+        "start_line": 60,
+        "end_line": 63
+      },
+      "source": {
+        "file": "src/main.rs",
+        "function": "fetch_body",
+        "line": 37,
+        "api": "reqwest::blocking::get"
+      },
+      "sink": {
+        "api": "reqwest::blocking::Client::request",
+        "line": 62,
+        "argument_index": 1,
+        "model": "request-url"
+      },
+      "fixture_case": "remote_to_ssrf",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-502",
+      "title": "deserialization of the request body",
+      "file": "src/main.rs",
+      "function": "decode",
+      "span": {
+        "start_line": 65,
+        "end_line": 67
+      },
+      "source": {
+        "file": "src/main.rs",
+        "function": "fetch_body",
+        "line": 37,
+        "api": "reqwest::blocking::get"
+      },
+      "sink": {
+        "api": "serde_json::from_str",
+        "line": 66,
+        "model": "api"
+      },
+      "fixture_case": "remote_to_deserialization",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-22",
+      "title": "path traversal from the CONFIG environment variable",
+      "file": "src/main.rs",
+      "function": "read_file",
+      "span": {
+        "start_line": 51,
+        "end_line": 53
+      },
+      "source": {
+        "file": "src/main.rs",
+        "function": "main",
+        "line": 86,
+        "api": "std::env::var"
+      },
+      "sink": {
+        "api": "std::fs::read_to_string",
+        "line": 52,
+        "model": "path-injection"
+      },
+      "fixture_case": "argv_and_env_sources",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-117",
+      "title": "log injection through the LOG verb",
+      "file": "src/server/request.rs",
+      "function": "handle_request",
+      "span": {
+        "start_line": 41,
+        "end_line": 107
+      },
+      "source": {
+        "file": "src/server/main.rs",
+        "function": "main",
+        "line": 32,
+        "api": "TcpListener::accept"
+      },
+      "read": {
+        "file": "src/server/request.rs",
+        "function": "serve_once",
+        "line": 116,
+        "api": "BufRead::read_line"
+      },
+      "sink": {
+        "api": "log::info!",
+        "line": 79,
+        "model": "log-injection"
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-770",
+      "title": "uncontrolled allocation size through SESSION reserve (CWE-190 product)",
+      "file": "src/server/session.rs",
+      "function": "Session::touch",
+      "span": {
+        "start_line": 25,
+        "end_line": 40
+      },
+      "source": {
+        "file": "src/server/main.rs",
+        "function": "main",
+        "line": 32,
+        "api": "TcpListener::accept"
+      },
+      "read": {
+        "file": "src/server/request.rs",
+        "function": "serve_once",
+        "line": 116,
+        "api": "BufRead::read_line"
+      },
+      "sink": {
+        "api": "Vec::with_capacity",
+        "line": 32,
+        "model": "alloc-size"
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C8",
+      "cwe": "CWE-22",
+      "title": "path traversal through the GET verb",
+      "file": "src/server/request.rs",
+      "function": "serve_file",
+      "span": {
+        "start_line": 17,
+        "end_line": 19
+      },
+      "source": {
+        "file": "src/server/main.rs",
+        "function": "main",
+        "line": 32,
+        "api": "TcpListener::accept"
+      },
+      "read": {
+        "file": "src/server/request.rs",
+        "function": "serve_once",
+        "line": 116,
+        "api": "BufRead::read_line"
+      },
+      "sink": {
+        "api": "std::fs::read",
+        "line": 18,
+        "model": "path-injection"
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "time",
+      "version": "0.1.43",
+      "ecosystem": "crates.io",
+      "osv": "RUSTSEC-2020-0071",
+      "cve": "CVE-2020-26235",
+      "ghsa": "GHSA-wcg3-cvx6-7396",
+      "fixed_version": "0.2.23",
+      "location": "Cargo.lock; vendor/time; Cargo.toml optional dependency behind feature legacy-time (never enabled)",
+      "reachability": "direct",
+      "visible_to": [
+        "syft cargo-lock cataloger",
+        "osv-scanner Cargo.lock",
+        "grype"
+      ],
+      "not_visible_to": [
+        "compiled artifacts (feature never enabled)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "smallvec",
+      "version": "0.6.9",
+      "ecosystem": "crates.io",
+      "osv": "RUSTSEC-2019-0009",
+      "cve": "CVE-2019-15551",
+      "ghsa": "GHSA-mm7v-vpv8-xfc3",
+      "fixed_version": "0.6.10",
+      "also": [
+        "RUSTSEC-2019-0012 (CVE-2019-15554, fixed 0.6.10)",
+        "RUSTSEC-2018-0018 (CVE-2018-25023, fixed 0.6.13)",
+        "RUSTSEC-2021-0003 (CVE-2021-25900, fixed 0.6.14)"
+      ],
+      "location": "Cargo.lock; vendor/smallvec",
+      "reachability": "transitive via unicode-normalization 0.1.9 (feature normalize, never enabled)",
+      "visible_to": [
+        "syft cargo-lock cataloger",
+        "osv-scanner Cargo.lock",
+        "grype"
+      ],
+      "not_visible_to": [
+        "compiled artifacts (feature never enabled)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "crossbeam-utils",
+      "version": "0.8.6",
+      "ecosystem": "crates.io",
+      "osv": "RUSTSEC-2022-0041",
+      "cve": "CVE-2022-23639",
+      "ghsa": "GHSA-qc84-gqf4-9926",
+      "fixed_version": "0.8.7",
+      "location": "Cargo.lock; vendor/crossbeam-utils; Cargo.toml optional dependency behind feature threads (never enabled)",
+      "reachability": "direct",
+      "visible_to": [
+        "syft cargo-lock cataloger",
+        "osv-scanner Cargo.lock",
+        "grype"
+      ],
+      "not_visible_to": [
+        "compiled artifacts (feature never enabled)"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in run_maintenance",
+      "file": "src/server/request.rs",
+      "function": "run_maintenance",
+      "introduced_commit": "93f80422b458c8c9d1b9b27dbae12f506b845b8e",
+      "introduced_span": {
+        "start_line": 12,
+        "end_line": 20
+      },
+      "introduced_sink": {
+        "api": "std::process::Command::arg (sh -c)",
+        "line": 16
+      },
+      "fixed_commit": "3c293984eb7acfc43a23e521145fe183415c3e06",
+      "fixed_span": {
+        "start_line": 32,
+        "end_line": 38
+      },
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in read_asset",
+      "file": "src/server/request.rs",
+      "function": "read_asset",
+      "introduced_commit": "a089c5358d12f23b1d43ba8eb2c77b21becf4b5f",
+      "introduced_span": {
+        "start_line": 15,
+        "end_line": 17
+      },
+      "introduced_sink": {
+        "api": "std::fs::read_to_string",
+        "line": 16
+      },
+      "fixed_commit": "c0b76953ee7664a9ddc5313c695d0d08bc803ec7",
+      "fixed_span": {
+        "start_line": 23,
+        "end_line": 29
+      },
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers canonicalize (line 24) and guard_fact dominating starts_with (line 25)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "memoffset",
+      "ecosystem": "crates.io",
+      "vulnerable_version": "0.5.5",
+      "fixed_version": "0.6.2",
+      "osv": "RUSTSEC-2023-0045",
+      "cve": null,
+      "ghsa": "GHSA-wfg4-322g-9vqv",
+      "introduced_commit": "38918313642a3eb31b15dbda3dbe98b3cdb568c7",
+      "fixed_commit": "dd0d5ad5ca9299fcd6140157f3a4a45c0fbeea75",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "cwe": "CWE-78",
+      "file": "src/server/util.rs",
+      "function": "maintenance_sync",
+      "span": {
+        "start_line": 45,
+        "end_line": 45
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand \"/bin/sync\"; no source reaches the sink",
+        "location": {
+          "file": "src/server/util.rs",
+          "line": 45
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "cwe": "CWE-120",
+      "file": "src/server/util.rs",
+      "function": "frame_fill",
+      "span": {
+        "start_line": 26,
+        "end_line": 26
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "n < f.data.len() && n <= src.len() dominates the copy, polarity true_branch, constrains_sink_operand",
+        "location": {
+          "file": "src/server/util.rs",
+          "line": 25
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "cwe": "CWE-22",
+      "file": "src/server/util.rs",
+      "function": "read_manifest",
+      "span": {
+        "start_line": 40,
+        "end_line": 40
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "std::fs::canonicalize dominates the sink (dominating_sanitizer_count 1) and a starts_with(MANIFEST_ROOT) guard follows it; source is argv (commandargs) in src/server/main.rs",
+        "location": {
+          "file": "src/server/util.rs",
+          "line": 36
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "cwe": "CWE-78",
+      "file": "src/server/util.rs",
+      "function": "legacy_exec",
+      "span": {
+        "start_line": 50,
+        "end_line": 52
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: no callers and no entry point reach legacy_exec",
+        "location": {
+          "file": "src/server/util.rs",
+          "line": 51
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-5",
+      "cwe": "CWE-89",
+      "file": "src/server/session.rs",
+      "function": "Session::open",
+      "span": {
+        "start_line": 17,
+        "end_line": 17
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant SQL string operand; no source reaches the sink",
+        "location": {
+          "file": "src/server/session.rs",
+          "line": 17
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/server/request.rs",
+    "function": "handle_request",
+    "cyclomatic": 20,
+    "holds": "TP-C6",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/rust-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "line_numbers_moved": false,
+    "adjustment": null,
+    "note": "src/main.rs and vendor/{reqwest,rusqlite,serde_json} are byte-identical to the fixture source; the bin target is named rust-synthetic so the qualified names (rust-synthetic::as_owned, rust-synthetic::main) in expected-facts.json hold."
+  },
+  "language_matrix": {
+    "languages": [
+      "Rust"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "syft",
+      "grype",
+      "osv-scanner",
+      "cve-bin-tool",
+      "tree-sitter"
+    ]
+  },
+  "history": {
+    "commits": 38,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-05-20",
+    "last_date": "2026-09-17",
+    "fix_commits": [
+      "3c293984eb7acfc43a23e521145fe183415c3e06",
+      "c0b76953ee7664a9ddc5313c695d0d08bc803ec7"
+    ],
+    "upgrade_commit": "dd0d5ad5ca9299fcd6140157f3a4a45c0fbeea75",
+    "rename": {
+      "from": "src/server/cache.rs",
+      "to": "src/server/session.rs",
+      "commit": "ab414b9cab44e49a9b37fd61d07b4d7dcace051d"
+    },
+    "revert": {
+      "reverted_commit": "0adb8a96150fcf85a0d68be35dd28f2fa31faa4b",
+      "revert_commit": "20f0153ee5cb694061128437bf8aeba4048cecc2",
+      "reapply_commit": "c378bd75f28be619f4ce666602ec1b552fc8e771"
+    },
+    "not_exploitable_commit": {
+      "commit": "5c3f473f83aad139c14634032c6b6635df4eecbe",
+      "about": "FP-2"
+    },
+    "hardening_review_commit": "68dcb8a5adb7a1717e66100fd1afe24adcf16b09",
+    "highest_churn_file": "src/server/request.rs",
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "syft_reported": [
+      "appsec-review-smoke-rust 0.1.0",
+      "autocfg 1.1.0",
+      "cfg-if 1.0.0",
+      "crossbeam-utils 0.8.6",
+      "lazy_static 1.4.0",
+      "libc 0.2.155",
+      "log 0.4.22",
+      "memoffset 0.6.2",
+      "reqwest 0.0.0",
+      "rusqlite 0.0.0",
+      "serde_json 0.0.0",
+      "smallvec 0.6.9",
+      "time 0.1.43",
+      "unicode-normalization 0.1.9",
+      "winapi 0.3.9",
+      "winapi-i686-pc-windows-gnu 0.4.0",
+      "winapi-x86_64-pc-windows-gnu 0.4.0"
+    ],
+    "semgrep_flagged_false_positives": [],
+    "semgrep_unflagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4",
+      "FP-5"
+    ],
+    "semgrep_findings_total": 0
+  },
+  "expected_gaps": [
+    {
+      "gap": "no mounted Semgrep or SEI CERT rule targets Rust",
+      "reason": "rules/semgrep/*.yml and rules/sei-cert/rules/ cover other languages; the Stage 3 Semgrep run reported 0 findings",
+      "affects": [
+        "FP-1",
+        "FP-2",
+        "FP-3",
+        "FP-4",
+        "FP-5"
+      ]
+    },
+    {
+      "gap": "range_fact not_applicable",
+      "reason": "codeql/rust-all 0.2.21 has no range analysis (fixture case not_applicable_range)",
+      "affects": [
+        "FP-2",
+        "TP-C7"
+      ]
+    },
+    {
+      "gap": "rust_summarized_body_prunes_remote_flow",
+      "reason": "CodeQL 2.27.0 drops taint from the remote source through <reqwest::blocking::response::Response>::text, a callable that has both a models-as-data summary and a body in the source root (the vendored stand-in). A configuration whose sinks include the stand-in's own nodes reaches every remote sink operand; restricted to sink operands, the flow is pruned. Raising fieldFlowBranchLimit does not change it.",
+      "affects": [
+        "TP-C1",
+        "TP-C2",
+        "TP-C3",
+        "TP-C4"
+      ]
+    },
+    {
+      "gap": "rust_canonicalize_summary_does_not_propagate",
+      "reason": "std::fs::canonicalize is a body-less summarized callable with OptionalStep and OptionalBarrier[normalize-path] rows and the call at line 56 resolves to it, but taint stops at its argument, also with optionalStep(normalize-path) added as an additional flow step. No path_sanitizers row is produced; the syntactic dominating_sanitizer_count on the sink is still 1.",
+      "affects": [
+        "FP-3",
+        "FX-C2",
+        "fixture case sanitized_path"
+      ]
+    },
+    {
+      "gap": "CodeQL model coverage of TcpListener::accept, log::info! and Vec::with_capacity not verified",
+      "reason": "no review or CodeQL run was executed for this target; the catalog lists rust.source.api.accept, rust.sink.model.log-injection and rust.sink.model.alloc-size",
+      "affects": [
+        "TP-C6",
+        "TP-C7",
+        "TP-C8"
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "planned": "two further crates from the candidate list (smallvec 0.6.9, chrono 0.4.19, regex 1.5.4, hyper 0.14.10)",
+      "actual": "smallvec 0.6.9 (transitive via unicode-normalization 0.1.9) and crossbeam-utils 0.8.6 (direct); memoffset 0.5.5 -> 0.6.2 as the fixed dependency",
+      "reason": "unicode-normalization 0.1.9 is the last release depending on smallvec 0.6 and has a clean record; crossbeam-utils 0.8.6 has one CVE with a clear fix and a two-crate closure; memoffset has a one-crate closure (autocfg) and 0.6.2 is clean, whereas regex 1.5.4 would pull regex-syntax, aho-corasick and memchr and chrono 0.4.19 would pull time 0.1 again"
+    }
+  ],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "6a11cc9677028a0eba366177019e599f35bcc978"
+  }
+}

@@ -1,0 +1,696 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "java",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-java",
+  "tag": "v1.0.0",
+  "commit": "3219d1700d6913c37bdfccd9b89c1b14f4055a07",
+  "build": {
+    "profile": "java",
+    "image": "audit-buildenv-java:local",
+    "command": "sh -c \"javac -d /scratch/classes $(find src -name '*.java')\"",
+    "elapsed_seconds": 3.8,
+    "expected_build_units": 1,
+    "notes": "Direct javac recipe (javac 21.0.12.1); the code imports nothing outside the JDK (java.sql, java.xml and jdk.httpserver are default root modules). `mvn -o -q -Dmaven.repo.local=/scratch/m2 compile` in the same image fails: 'Plugin org.apache.maven.plugins:maven-resources-plugin:3.3.1 or one of its dependencies could not be resolved: Cannot access central in offline mode and the artifact has not been downloaded from it before' (the image carries Maven 3.9.9 but no core plugins in any local repository). The pom.xml exists for SBOM tools and declares no plugins. Repository mounted read-only; javac writes only under /scratch/classes. Not tagged: the repository has not been pushed."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-1333",
+      "title": "regular-expression injection through the MATCH verb",
+      "file": "src/main/java/app/Router.java",
+      "function": "route",
+      "span": {
+        "start_line": 47,
+        "end_line": 47
+      },
+      "source": {
+        "file": "src/main/java/app/Main.java",
+        "function": "main",
+        "line": 21,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "Pattern.compile",
+        "line": 47
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-611",
+      "title": "XML external entity processing through the XML verb",
+      "file": "src/main/java/app/Documents.java",
+      "function": "parse",
+      "span": {
+        "start_line": 21,
+        "end_line": 22
+      },
+      "source": {
+        "file": "src/main/java/app/Main.java",
+        "function": "main",
+        "line": 21,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "DocumentBuilder.parse",
+        "line": 22
+      },
+      "also_flagged_by": [
+        "appsec-review.review-signal.sensitive_wrapper.java-xml-factory-without-hardening",
+        "appsec-review.sei-cert.java.ids17-j.parser-without-entity-restriction"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-89",
+      "title": "SQL injection in lookup through buildQuery",
+      "file": "src/main/java/app/Server.java",
+      "function": "lookup",
+      "span": {
+        "start_line": 42,
+        "end_line": 42
+      },
+      "source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 25,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "Statement.executeQuery",
+        "line": 42
+      },
+      "fixture_cases": [
+        "sql_sink",
+        "cross_function_summary"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-78",
+      "title": "command injection in runCommand",
+      "file": "src/main/java/app/Server.java",
+      "function": "runCommand",
+      "span": {
+        "start_line": 46,
+        "end_line": 46
+      },
+      "source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 25,
+        "api": "Socket.getInputStream"
+      },
+      "second_source": {
+        "file": "src/main/java/app/Cli.java",
+        "function": "main",
+        "line": 4,
+        "api": "args"
+      },
+      "sink": {
+        "api": "Runtime.exec",
+        "line": 46
+      },
+      "fixture_cases": [
+        "command_sink",
+        "two_paths_to_one_sink"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-22",
+      "title": "path injection in writeChecked and FileStore.save",
+      "file": "src/main/java/app/Server.java",
+      "function": "writeChecked",
+      "span": {
+        "start_line": 53,
+        "end_line": 53
+      },
+      "source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 25,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "FileOutputStream",
+        "line": 53
+      },
+      "second_sink": {
+        "file": "src/main/java/app/FileStore.java",
+        "function": "save",
+        "api": "FileOutputStream",
+        "line": 8
+      },
+      "fixture_cases": [
+        "path_sink_model",
+        "non_dominating_guard",
+        "virtual_dispatch"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery in fetch",
+      "file": "src/main/java/app/Server.java",
+      "function": "fetch",
+      "span": {
+        "start_line": 62,
+        "end_line": 62
+      },
+      "source": {
+        "file": "src/main/java/app/Cli.java",
+        "function": "main",
+        "line": 5,
+        "api": "System.getenv"
+      },
+      "second_source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 25,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "URL.openStream",
+        "line": 62
+      },
+      "fixture_cases": [
+        "ssrf_sink",
+        "environment_source"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-502",
+      "title": "deserialization of untrusted data in serve",
+      "file": "src/main/java/app/Server.java",
+      "function": "serve",
+      "span": {
+        "start_line": 34,
+        "end_line": 34
+      },
+      "source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 34,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "ObjectInputStream.readObject",
+        "line": 34
+      },
+      "fixture_cases": [
+        "deserialization_sink"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C8",
+      "cwe": "CWE-470",
+      "title": "unsafe reflection in invokeNamed",
+      "file": "src/main/java/app/Server.java",
+      "function": "invokeNamed",
+      "span": {
+        "start_line": 66,
+        "end_line": 67
+      },
+      "source": {
+        "file": "src/main/java/app/Server.java",
+        "function": "serve",
+        "line": 25,
+        "api": "Socket.getInputStream"
+      },
+      "sink": {
+        "api": "Class.forName",
+        "line": 66
+      },
+      "fixture_cases": [
+        "reflection_sink",
+        "unresolved_reflective_call"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C9",
+      "cwe": "CWE-117",
+      "title": "log injection in Handler.handle",
+      "file": "src/main/java/app/Handler.java",
+      "function": "handle",
+      "span": {
+        "start_line": 19,
+        "end_line": 19
+      },
+      "source": {
+        "file": "src/main/java/app/Handler.java",
+        "function": "handle",
+        "line": 15,
+        "api": "HttpExchange.getRequestBody"
+      },
+      "sink": {
+        "api": "System.Logger.log",
+        "line": 19
+      },
+      "fixture_cases": [
+        "log_sink_model",
+        "api_source_remote"
+      ],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "org.apache.logging.log4j:log4j-core",
+      "version": "2.14.1",
+      "ecosystem": "Maven",
+      "osv": "GHSA-jfh8-c2jp-5v3q",
+      "cve": "CVE-2021-44228",
+      "fixed_version": "2.15.0",
+      "other_advisories_at_this_version": [
+        "GHSA-7rjr-3q55-vv33",
+        "GHSA-8489-44mv-ggj8",
+        "GHSA-p6xc-xr62-6r2g",
+        "GHSA-vc5p-v9hr-52mj",
+        "GHSA-3pxv-7cmr-fjr4",
+        "GHSA-6hg6-v5c8-fphq",
+        "GHSA-h383-gmxw-35v2"
+      ],
+      "location": "pom.xml",
+      "location_lines": {
+        "start_line": 15,
+        "end_line": 19
+      },
+      "transitive": false,
+      "visible_to": [
+        "syft java-pom-cataloger (reported log4j-core 2.14.1 java-archive)",
+        "osv-scanner pom.xml",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "org.yaml:snakeyaml",
+      "version": "1.30",
+      "ecosystem": "Maven",
+      "osv": "GHSA-3mc7-4q67-w48m",
+      "cve": "CVE-2022-25857",
+      "fixed_version": "1.31",
+      "other_advisories_at_this_version": [
+        "GHSA-98wm-3w3q-mw94",
+        "GHSA-9w3m-gqgf-c4p9",
+        "GHSA-c4r9-r8fh-9vj2",
+        "GHSA-hhhw-99gj-p3c3",
+        "GHSA-mjmj-j48q-9wg2",
+        "GHSA-w37g-rhq8-7m4j"
+      ],
+      "location": "pom.xml",
+      "location_lines": {
+        "start_line": 20,
+        "end_line": 24
+      },
+      "transitive": false,
+      "visible_to": [
+        "syft java-pom-cataloger (reported snakeyaml 1.30 java-archive)",
+        "osv-scanner pom.xml",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "commons-io:commons-io",
+      "version": "2.6",
+      "ecosystem": "Maven",
+      "osv": "GHSA-gwrp-pvrq-jmwv",
+      "cve": "CVE-2021-29425",
+      "fixed_version": "2.7",
+      "other_advisories_at_this_version": [
+        "GHSA-78wr-2p64-hpwj (CVE-2024-47554, fixed 2.14.0)"
+      ],
+      "location": "pom.xml",
+      "location_lines": {
+        "start_line": 25,
+        "end_line": 29
+      },
+      "transitive": false,
+      "visible_to": [
+        "syft java-pom-cataloger (reported commons-io 2.6 java-archive)",
+        "osv-scanner pom.xml",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in Tools.run",
+      "file": "src/main/java/app/Tools.java",
+      "function": "run",
+      "introduced_commit": "5bae1ffb1b2fe2040bd0336665d093e153386dfb",
+      "introduced_span": {
+        "start_line": 12,
+        "end_line": 12
+      },
+      "fixed_commit": "b9f236456e2a86914f7426bfd66c17d6c7571c14",
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none",
+      "fixed_state_span": {
+        "start_line": 9,
+        "end_line": 18
+      },
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in Assets.read",
+      "file": "src/main/java/app/Assets.java",
+      "function": "read",
+      "introduced_commit": "88cec6274257dcf06d8c66b7cebaf44175032d95",
+      "introduced_span": {
+        "start_line": 16,
+        "end_line": 16
+      },
+      "fixed_commit": "b6a8be4a30ab01ec085216909e7e7104e0279f44",
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers getCanonicalPath (line 17) and guard_fact dominating startsWith (line 18) before new File(canonical) (line 21)",
+      "fixed_state_span": {
+        "start_line": 17,
+        "end_line": 21
+      },
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "org.apache.commons:commons-text",
+      "ecosystem": "Maven",
+      "vulnerable_version": "1.9",
+      "fixed_version": "1.10.0",
+      "osv": "GHSA-599f-7c49-w659",
+      "cve": "CVE-2022-42889",
+      "introduced_commit": "f9154334135aa87c535356dd462afea21d648f22",
+      "fixed_commit": "779ece368f7304d58b03656eca22354df18d7ff0",
+      "location": "pom.xml",
+      "location_lines": {
+        "start_line": 30,
+        "end_line": 34
+      },
+      "head_version_osv_records": 0,
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "src/main/java/app/Catalog.java",
+      "function": "count",
+      "span": {
+        "start_line": 22,
+        "end_line": 22
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.java-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "the only concatenated operand is the compile-time constant TABLE (line 10); no source reaches the executeQuery argument",
+        "location": {
+          "file": "src/main/java/app/Catalog.java",
+          "line": 10
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "src/main/java/app/Catalog.java",
+      "function": "page",
+      "span": {
+        "start_line": 30,
+        "end_line": 30
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.java-sql-string-concatenation",
+        "appsec-review.sei-cert.java.ids00-j.concatenated-sql-statement"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "page < 100 dominates the sink, polarity true_branch, comparison <, rhs constant 100; the concatenated operand is the bounded int page",
+        "location": {
+          "file": "src/main/java/app/Catalog.java",
+          "line": 28
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "src/main/java/app/Assets.java",
+      "function": "readTemplate",
+      "span": {
+        "start_line": 27,
+        "end_line": 27
+      },
+      "flagged_by": [],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "getCanonicalPath (line 26) dominates and lies on the only flow to new File(canonical) passed to new FileInputStream in slurp",
+        "location": {
+          "file": "src/main/java/app/Assets.java",
+          "line": 26
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "src/main/java/app/Catalog.java",
+      "function": "legacyLookup",
+      "span": {
+        "start_line": 43,
+        "end_line": 43
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.java-sql-string-concatenation",
+        "appsec-review.sei-cert.java.ids00-j.concatenated-sql-statement"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "legacyLookup has no callers and is not an entry point, so no dataflow_path reaches the executeQuery argument",
+        "location": {
+          "file": "src/main/java/app/Catalog.java",
+          "line": 41
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-5",
+      "file": "src/main/java/app/Documents.java",
+      "function": "parseDefaults",
+      "span": {
+        "start_line": 32,
+        "end_line": 33
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sensitive_wrapper.java-xml-factory-without-hardening",
+        "appsec-review.sei-cert.java.ids17-j.parser-without-entity-restriction"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "the parsed document is the compile-time constant DEFAULTS (line 13); no source reaches the parse argument",
+        "location": {
+          "file": "src/main/java/app/Documents.java",
+          "line": 13
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/main/java/app/Router.java",
+    "function": "route",
+    "start_line": 22,
+    "end_line": 86,
+    "cyclomatic": 37,
+    "decisions": {
+      "if": 14,
+      "boolean": 10,
+      "ternary": 10,
+      "loop": 1,
+      "catch": 1
+    },
+    "holds": "TP-C1",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/java-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "fixture_files_at_head": [
+      "src/main/java/app/Cli.java",
+      "src/main/java/app/FileStore.java",
+      "src/main/java/app/Handler.java",
+      "src/main/java/app/MemoryStore.java",
+      "src/main/java/app/Server.java",
+      "src/main/java/app/Store.java"
+    ],
+    "line_numbers_moved": false,
+    "adjustment": null,
+    "note": "The fixture's paths are app/<File>.java; at the head they live under src/main/java/app/. Byte identity of all six files was checked with cmp."
+  },
+  "language_matrix": {
+    "languages": [
+      "Java"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "opengrep",
+      "syft",
+      "grype",
+      "osv-scanner"
+    ]
+  },
+  "history": {
+    "commits": 34,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-04-15",
+    "last_date": "2026-08-24",
+    "fix_commits": [
+      "b9f236456e2a86914f7426bfd66c17d6c7571c14",
+      "b6a8be4a30ab01ec085216909e7e7104e0279f44"
+    ],
+    "upgrade_commit": "779ece368f7304d58b03656eca22354df18d7ff0",
+    "rename": {
+      "from": "src/main/java/app/Xml.java",
+      "to": "src/main/java/app/Documents.java",
+      "commit": "750789f71c40c5c3071db0d08d94d91392b53d9b"
+    },
+    "revert": {
+      "reverted_commit": "bbb62e965e3234632d00669809e9d8936c9663eb",
+      "revert_commit": "19cc2de49e1e0a39e58aca261e7ce3f6077b61a6",
+      "reapply_commit": "745d978bd8f94cc3221095096fd535f80ebef28c"
+    },
+    "not_exploitable_commit": {
+      "commit": "162f1c2a55142f436e32635eeba9d628a7dbaaed",
+      "about": "FP-1"
+    },
+    "hardening_review_commit": "b1c069cebb9621721071e8852798e40c2c1fdbf7",
+    "highest_churn_file": "src/main/java/app/Router.java",
+    "churn_top5": {
+      "src/main/java/app/Router.java": 15,
+      "pom.xml": 7,
+      "CHANGELOG.md": 5,
+      "src/main/java/app/Catalog.java": 4,
+      "src/main/java/app/Assets.java": 3
+    },
+    "commits_touching_more_than_three_files": [
+      "eec21d64330954372f15f34d2ac34d03076ac42e (Initial commit: fixture files, LICENSE, README, .gitignore and tools/)"
+    ],
+    "merges": 0,
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "syft_reported": [
+      "appsec-review-smoke-java 0.1.0 (java-archive)",
+      "commons-io 2.6 (java-archive)",
+      "commons-text 1.10.0 (java-archive)",
+      "log4j-core 2.14.1 (java-archive)",
+      "snakeyaml 1.30 (java-archive)"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-4",
+      "FP-5"
+    ],
+    "semgrep_unflagged_false_positives": [
+      "FP-3"
+    ],
+    "semgrep_check_id_prefixes": "the mounted run reports ids as rules.<id> for rules/semgrep and rules-sei-cert.java.<id> for rules/sei-cert; flagged_by records the bare ids",
+    "semgrep_other_findings": [
+      "TP-C2 Documents.java:21-22 (java-xml-factory-without-hardening, ids17-j): a true positive the rules also report",
+      "err07-j.declares-generic-exception on the fixture methods FileStore.java:7 and Server.java:23,41,45,49,56,61,65 (fixture code declares throws Exception; not planted)"
+    ]
+  },
+  "expected_gaps": [
+    {
+      "gap": "FP-3 is reported by no mounted rule",
+      "reason": "no Java path-injection rule exists under rules/semgrep or rules/sei-cert; the construct is planted and labelled honestly",
+      "affects": [
+        "FP-3"
+      ]
+    },
+    {
+      "gap": "no transitive dependency pin",
+      "reason": "Maven has no lockfile; pom.xml declares only direct coordinates, so the 'one transitive' requirement is not applicable",
+      "affects": [
+        "TP-D1",
+        "TP-D2",
+        "TP-D3"
+      ]
+    },
+    {
+      "gap": "mvn -o compile fails in the pinned image",
+      "reason": "the image has no Maven core plugins in a local repository (maven-resources-plugin 3.3.1 unresolved offline); the build is the javac recipe",
+      "affects": [
+        "build"
+      ]
+    },
+    {
+      "gap": "range_fact not_applicable",
+      "reason": "every Java sink operand is a reference type; the fixture exports ranges as not_applicable",
+      "affects": [
+        "FP-2"
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "planned": "fixed-in-history candidate commons-io 2.6 -> 2.7",
+      "actual": "commons-text 1.9 -> 1.10.0 as FX-D1; commons-io 2.6 kept as TP-D3",
+      "reason": "commons-io 2.7 still has an OSV record (GHSA-78wr-2p64-hpwj, fixed 2.14.0), so the head would not be clean after a 2.7 upgrade; commons-text 1.10.0 has no OSV record"
+    },
+    {
+      "planned": "jackson-databind 2.9.8 candidate",
+      "actual": "not used",
+      "reason": "more than sixty OSV records at that version; snakeyaml 1.30 and commons-io 2.6 give clearer single-advisory expectations"
+    }
+  ],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "3219d1700d6913c37bdfccd9b89c1b14f4055a07"
+  }
+}

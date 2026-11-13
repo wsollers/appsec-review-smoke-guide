@@ -1,0 +1,518 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "python",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-python",
+  "tag": "v1.0.0",
+  "commit": "0821c008da6ef5b9055e7cd4cc27d71a5bb147a7",
+  "build": {
+    "profile": "python",
+    "image": "audit-buildenv-python:local",
+    "command": "python3 -m compileall -q .",
+    "elapsed_seconds": 5.5,
+    "expected_build_units": 1,
+    "notes": "Byte-compile of every module; the repository is mounted read-only and PYTHONPYCACHEPREFIX=/scratch/pycache places the bytecode under /scratch. Nothing is installed; requirements.txt and pyproject.toml are read by SBOM tools only. The tag is not yet created: the repository has not been pushed."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-89",
+      "title": "SQL injection from the users route through run_query (fixture case remote_to_sql)",
+      "file": "src/smoke/app.py",
+      "function": "run_query",
+      "span": {
+        "start_line": 18,
+        "end_line": 18
+      },
+      "source": {
+        "file": "src/smoke/app.py",
+        "function": "show_user",
+        "line": 23,
+        "api": "flask route parameter"
+      },
+      "sink": {
+        "api": "sqlite3 cursor.execute",
+        "line": 18
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-78",
+      "title": "command injection in ping, the unguarded os.system (fixture case remote_to_command)",
+      "file": "src/smoke/app.py",
+      "function": "ping",
+      "span": {
+        "start_line": 33,
+        "end_line": 33
+      },
+      "source": {
+        "file": "src/smoke/app.py",
+        "function": "ping",
+        "line": 30,
+        "api": "flask route parameter"
+      },
+      "sink": {
+        "api": "os.system",
+        "line": 33
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-22",
+      "title": "path traversal in read_file (fixture case remote_to_path; realpath on the path is the fixture's sanitized_path case and does not confine the path)",
+      "file": "src/smoke/app.py",
+      "function": "read_file",
+      "span": {
+        "start_line": 40,
+        "end_line": 40
+      },
+      "source": {
+        "file": "src/smoke/app.py",
+        "function": "read_file",
+        "line": 38,
+        "api": "flask route parameter"
+      },
+      "sink": {
+        "api": "open",
+        "line": 40
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery in fetch (fixture case remote_to_ssrf)",
+      "file": "src/smoke/app.py",
+      "function": "fetch",
+      "span": {
+        "start_line": 47,
+        "end_line": 47
+      },
+      "source": {
+        "file": "src/smoke/app.py",
+        "function": "fetch",
+        "line": 46,
+        "api": "flask route parameter"
+      },
+      "sink": {
+        "api": "requests.get",
+        "line": 47
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-502",
+      "title": "deserialization of untrusted data in load (fixture case remote_to_deserialization)",
+      "file": "src/smoke/app.py",
+      "function": "load",
+      "span": {
+        "start_line": 53,
+        "end_line": 53
+      },
+      "source": {
+        "file": "src/smoke/app.py",
+        "function": "load",
+        "line": 52,
+        "api": "flask route parameter"
+      },
+      "sink": {
+        "api": "pickle.loads",
+        "line": 53
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-117",
+      "title": "log injection through the lookup path",
+      "file": "src/smoke/service.py",
+      "function": "handle_request",
+      "span": {
+        "start_line": 35,
+        "end_line": 35
+      },
+      "source": {
+        "file": "src/smoke/service.py",
+        "function": "api",
+        "line": 17,
+        "api": "flask request.args"
+      },
+      "sink": {
+        "api": "logging.Logger.info",
+        "line": 35
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-601",
+      "title": "open redirect through the return path",
+      "file": "src/smoke/navigation.py",
+      "function": "return_to",
+      "span": {
+        "start_line": 7,
+        "end_line": 7
+      },
+      "source": {
+        "file": "src/smoke/service.py",
+        "function": "api",
+        "line": 17,
+        "api": "flask request.args (next, passed at service.py line 46)"
+      },
+      "sink": {
+        "api": "flask.redirect",
+        "line": 7
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "urllib3",
+      "version": "1.24",
+      "ecosystem": "PyPI",
+      "osv": "GHSA-gwvm-45gx-3cf8",
+      "cve": "CVE-2018-25091",
+      "fixed_version": "1.24.2",
+      "also": [
+        "GHSA-mh33-7rrq-662w CVE-2019-11324 fixed 1.24.2",
+        "GHSA-r64q-w8jr-g9qp CVE-2019-11236 fixed 1.24.3",
+        "later 1.25.x/1.26.x advisories"
+      ],
+      "location": "requirements.txt and pyproject.toml (direct, never imported)",
+      "visible_to": [
+        "syft python-requirements cataloger",
+        "osv-scanner requirements.txt scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "PyYAML",
+      "version": "5.3",
+      "ecosystem": "PyPI",
+      "osv": "GHSA-8q59-q68h-6hv4",
+      "cve": "CVE-2020-14343",
+      "fixed_version": "5.4",
+      "also": [
+        "GHSA-6757-jp84-gxfx CVE-2020-1747 fixed 5.3.1"
+      ],
+      "location": "requirements.txt and pyproject.toml (direct, never imported)",
+      "visible_to": [
+        "syft python-requirements cataloger",
+        "osv-scanner requirements.txt scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "idna",
+      "version": "3.6",
+      "ecosystem": "PyPI",
+      "osv": "GHSA-jjg7-2v4v-x38h",
+      "cve": "CVE-2024-3651",
+      "fixed_version": "3.7",
+      "also": [
+        "GHSA-65pc-fj4g-8rjx CVE-2026-45409 fixed 3.15"
+      ],
+      "location": "requirements.txt only (transitive pin via requests 2.33.0; not in pyproject.toml, never imported)",
+      "visible_to": [
+        "syft python-requirements cataloger",
+        "osv-scanner requirements.txt scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in archive",
+      "file": "src/smoke/maintenance.py",
+      "function": "archive",
+      "introduced_commit": "6d6f6684b05ee6f17a7f401d5129b4f65efd8bc4",
+      "introduced_span": {
+        "start_line": 9,
+        "end_line": 10
+      },
+      "fixed_commit": "e1fd4ee32f3c83bf1db1803513a87cf0a66bcb71",
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none (subprocess.run(shell=True) replaced by shutil.make_archive at head line 12)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in read_report",
+      "file": "src/smoke/maintenance.py",
+      "function": "read_report",
+      "introduced_commit": "9192109ef9da1988adc970de509e43636524417c",
+      "introduced_span": {
+        "start_line": 18,
+        "end_line": 18
+      },
+      "fixed_commit": "990bdd6d025cd59e4005af3737ae7fad77f3eb56",
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers os.path.realpath (head line 21) dominating open (head line 24); guard_fact path.startswith(REPORT_ROOT) (head line 22)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "Jinja2",
+      "ecosystem": "PyPI",
+      "vulnerable_version": "2.10",
+      "fixed_version": "3.1.6",
+      "osv": "GHSA-462w-v97r-4m45",
+      "cve": "CVE-2019-10906",
+      "introduced_commit": "039ee752c6995fd5eb37d1134870cdf7a9fabfd0",
+      "fixed_commit": "00a8a932ab75cbaac2b1c01f067e2bc84deaad00",
+      "notes": "2.10 also carries CVE-2020-28493, CVE-2024-22195, CVE-2024-34064, CVE-2024-56326 and CVE-2025-27516; 3.1.6 has no OSV record (checked 2026-11-13). MarkupSafe 3.0.2 is its clean transitive pin.",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "src/smoke/tools.py",
+      "function": "self_test",
+      "span": {
+        "start_line": 9,
+        "end_line": 9
+      },
+      "flagged_by": [
+        "appsec-review.python-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand: eval(\"1 + 1\") has a literal argument, no dataflow_path reaches the sink",
+        "location": {
+          "file": "src/smoke/tools.py",
+          "line": 9
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "src/smoke/tools.py",
+      "function": "evaluate_known",
+      "span": {
+        "start_line": 17,
+        "end_line": 17
+      },
+      "flagged_by": [
+        "appsec-review.python-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "expr in KNOWN_FORMULAS dominates the sink, polarity true_branch, comparison_operator in, constrains_sink_operand; the operand is one of three literal strings",
+        "location": {
+          "file": "src/smoke/tools.py",
+          "line": 16
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "src/smoke/tools.py",
+      "function": "scale",
+      "span": {
+        "start_line": 24,
+        "end_line": 24
+      },
+      "flagged_by": [
+        "appsec-review.python-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "shlex.quote (catalogued sanitizer) dominates the sink; its output is always a single-quoted string literal, so the evaluated text is len('...')",
+        "location": {
+          "file": "src/smoke/tools.py",
+          "line": 23
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "src/smoke/tools.py",
+      "function": "legacy_eval",
+      "span": {
+        "start_line": 29,
+        "end_line": 29
+      },
+      "flagged_by": [
+        "appsec-review.python-dangerous-eval"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: legacy_eval has no callers and no entry point",
+        "location": {
+          "file": "src/smoke/tools.py",
+          "line": 27
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/smoke/service.py",
+    "function": "handle_request",
+    "cyclomatic": 27,
+    "decisions": {
+      "if": 16,
+      "boolean": 7,
+      "ternary": 3
+    },
+    "span": {
+      "start_line": 20,
+      "end_line": 75
+    },
+    "holds": "TP-C6",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true,
+    "measurement_note": "Measured with complexity.py's _cyclomatic through the tool-tree-sitter image using a locally registered Python LanguageSpec (~/smoke-work/python/tools-local/complexity_check.py), because appsec-review's languages.py has no Python spec and lists the python grammar in UNSCORED_GRAMMARS. See expected_gaps."
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/python-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "line_numbers_moved": false,
+    "adjustment": null,
+    "fixture_path_in_target": "src/smoke/app.py"
+  },
+  "language_matrix": {
+    "languages": [
+      "Python"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "opengrep",
+      "syft",
+      "grype",
+      "osv-scanner"
+    ]
+  },
+  "history": {
+    "commits": 35,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-05-06",
+    "last_date": "2026-08-28",
+    "fix_commits": [
+      "e1fd4ee32f3c83bf1db1803513a87cf0a66bcb71",
+      "990bdd6d025cd59e4005af3737ae7fad77f3eb56"
+    ],
+    "upgrade_commit": "00a8a932ab75cbaac2b1c01f067e2bc84deaad00",
+    "security_md_commit": "36a65b328b087c8fd453aaa05fd964f20e01af18",
+    "rename": {
+      "from": "src/smoke/redirects.py",
+      "to": "src/smoke/navigation.py",
+      "commit": "c9386df7325f15fa8e830e4dbedc1b1b8983b115"
+    },
+    "revert": {
+      "reverted_commit": "d6a95e2ab1a46f56741eface36a26e362d031edc",
+      "revert_commit": "ab60640ea78b553d7a2497036edabc999141f34e",
+      "reapply_commit": "11cca677939fbd01bd6aad59c1b39bc1aca715bb"
+    },
+    "not_exploitable_commit": {
+      "commit": "dd5a353c88624c791bb8df9f2d082744c0a0a401",
+      "about": "FP-2"
+    },
+    "highest_churn_file": "src/smoke/service.py",
+    "churn_top": {
+      "src/smoke/service.py": 15,
+      "src/smoke/tools.py": 5,
+      "CHANGELOG.md": 5,
+      "src/smoke/maintenance.py": 4,
+      "requirements.txt": 4
+    },
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "syft_reported": [
+      "certifi 2026.10.18",
+      "charset-normalizer 3.4.1",
+      "idna 3.6",
+      "jinja2 3.1.6",
+      "markupsafe 3.0.2",
+      "pyyaml 5.3",
+      "requests 2.33.0",
+      "urllib3 1.24"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4"
+    ],
+    "semgrep_unflagged_false_positives": [],
+    "semgrep_total_findings": 4
+  },
+  "expected_gaps": [
+    {
+      "gap": "range_fact not_applicable",
+      "reason": "the Python graph-export pack reports every sink operand range as not_applicable (fixture case range_not_applicable)",
+      "affects": [
+        "FP-2"
+      ]
+    },
+    {
+      "gap": "complexity unscored for python",
+      "reason": "job_review_prioritization/languages.py has no Python LanguageSpec and lists the python grammar in UNSCORED_GRAMMARS, so the prioritization job will not score handle_request; the cyclomatic value 27 above was measured with a locally registered spec",
+      "affects": [
+        "complexity"
+      ]
+    },
+    {
+      "gap": "no SEI CERT rules for Python; the only mounted Semgrep rule is appsec-review.python-dangerous-eval",
+      "reason": "rules/sei-cert/rules has c, cpp and java only; every planted false positive is therefore an eval call",
+      "affects": [
+        "FP-1",
+        "FP-2",
+        "FP-3",
+        "FP-4"
+      ]
+    },
+    {
+      "gap": "additional true advisories on the planted versions",
+      "reason": "OSV lists more records than the planted ids for urllib3 1.24, idna 3.6 and Jinja2 2.10 (listed per item); a scanner reporting them is correct",
+      "affects": [
+        "TP-D1",
+        "TP-D3",
+        "FX-D1"
+      ]
+    }
+  ],
+  "substitutions": [],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "0821c008da6ef5b9055e7cd4cc27d71a5bb147a7"
+  }
+}

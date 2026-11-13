@@ -1,0 +1,583 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "csharp",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-csharp",
+  "tag": "v1.0.0",
+  "commit": "887af65120b0395f1066bd5183017d00808b5b62",
+  "build": {
+    "profile": "dotnet",
+    "image": "audit-buildenv-dotnet:local",
+    "command": "sh -c \"dotnet restore --locked-mode -p:BaseIntermediateOutputPath=/scratch/obj/ && dotnet build --no-restore -p:BaseIntermediateOutputPath=/scratch/obj/ -p:OutputPath=/scratch/bin/\"",
+    "elapsed_seconds": 18.2,
+    "expected_build_units": 1,
+    "notes": "Smoke.csproj: net8.0, Microsoft.NET.Sdk.Web, RestorePackagesWithLockFile. nuget.config clears all sources and points at the vendored feed nuget/; restore in --locked-mode needs no network and does not write packages.lock.json, so the tree builds read-only with obj/ and bin/ redirected to /scratch (verify.sh environment: HOME, DOTNET_CLI_HOME, NUGET_PACKAGES under /scratch). 0 warnings with TreatWarningsAsErrors. The fixture Program.cs supplies the only Main (Synthetic.Program)."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-89",
+      "title": "SQL injection through the items query",
+      "file": "src/Program.cs",
+      "function": "Synthetic.ItemsController.Query",
+      "span": {
+        "start_line": 65,
+        "end_line": 66
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Query",
+        "line": 62,
+        "api": "action parameter name"
+      },
+      "sink": {
+        "api": "DbCommand.CommandText",
+        "line": 65
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-78",
+      "title": "command injection through the run action",
+      "file": "src/Program.cs",
+      "function": "Synthetic.ItemsController.Run",
+      "span": {
+        "start_line": 74,
+        "end_line": 76
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Run",
+        "line": 70,
+        "api": "action parameter tool"
+      },
+      "sink": {
+        "api": "Process.Start",
+        "line": 76
+      },
+      "notes": "Line 74 sits under the non-bounding guard tool.Length < 16 (fixture case dominating_guard); line 76 is unguarded (non_dominating_guard). Both are real injection sinks.",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery through the fetch action",
+      "file": "src/Program.cs",
+      "function": "Synthetic.ItemsController.Fetch",
+      "span": {
+        "start_line": 83,
+        "end_line": 83
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Fetch",
+        "line": 81,
+        "api": "action parameter url"
+      },
+      "sink": {
+        "api": "HttpClient.GetStringAsync",
+        "line": 83
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-22",
+      "title": "path traversal from the read action through FileStore.Load",
+      "file": "src/Program.cs",
+      "function": "Synthetic.FileStore.Load",
+      "span": {
+        "start_line": 20,
+        "end_line": 20
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Read",
+        "line": 87,
+        "api": "action parameter name"
+      },
+      "sink": {
+        "api": "File.Delete",
+        "line": 20
+      },
+      "notes": "Reached through the virtual call store.Load(name) at line 90 (fixture cases virtual_dispatch and cross_function_flow_summary).",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-502",
+      "title": "unsafe deserialization through the import action",
+      "file": "src/Program.cs",
+      "function": "Synthetic.ItemsController.Import",
+      "span": {
+        "start_line": 98,
+        "end_line": 98
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Import",
+        "line": 94,
+        "api": "action parameter body"
+      },
+      "sink": {
+        "api": "XmlSerializer.Deserialize",
+        "line": 98
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-470",
+      "title": "unsafe reflection through the import action",
+      "file": "src/Program.cs",
+      "function": "Synthetic.ItemsController.Import",
+      "span": {
+        "start_line": 96,
+        "end_line": 97
+      },
+      "source": {
+        "file": "src/Program.cs",
+        "function": "Synthetic.ItemsController.Import",
+        "line": 94,
+        "api": "action parameter typeName"
+      },
+      "sink": {
+        "api": "Activator.CreateInstance",
+        "line": 97
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-78",
+      "title": "command injection through the exec verb",
+      "file": "src/MaintenanceController.cs",
+      "function": "Smoke.MaintenanceController.Dispatch",
+      "span": {
+        "start_line": 75,
+        "end_line": 75
+      },
+      "source": {
+        "file": "src/MaintenanceController.cs",
+        "function": "Smoke.MaintenanceController.Dispatch",
+        "line": 41,
+        "api": "action parameter arg"
+      },
+      "sink": {
+        "api": "Process.Start(\"/bin/sh\", \"-c \" + arg)",
+        "line": 75
+      },
+      "notes": "Also reported by appsec-review.review-signal.sink.csharp-process-shell (Semgrep) at line 75; that signal is a true positive here.",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C8",
+      "cwe": "CWE-601",
+      "title": "open redirect through the follow action",
+      "file": "src/Navigation.cs",
+      "function": "Smoke.NavigationController.Follow",
+      "span": {
+        "start_line": 14,
+        "end_line": 14
+      },
+      "source": {
+        "file": "src/Navigation.cs",
+        "function": "Smoke.NavigationController.Follow",
+        "line": 12,
+        "api": "action parameter target"
+      },
+      "sink": {
+        "api": "ControllerBase.Redirect",
+        "line": 14
+      },
+      "notes": "The file was src/Redirects.cs until the rename commit; history must follow the rename to see its introduction.",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C9",
+      "cwe": "CWE-611",
+      "title": "XML external entity processing in the feed import",
+      "file": "src/Feeds.cs",
+      "function": "Smoke.FeedsController.ImportFeed",
+      "span": {
+        "start_line": 16,
+        "end_line": 20
+      },
+      "source": {
+        "file": "src/Feeds.cs",
+        "function": "Smoke.FeedsController.ImportFeed",
+        "line": 14,
+        "api": "action parameter body"
+      },
+      "sink": {
+        "api": "XmlReader.Create with DtdProcessing.Parse and XmlUrlResolver",
+        "line": 20
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "Newtonsoft.Json",
+      "version": "12.0.1",
+      "ecosystem": "NuGet",
+      "osv": "GHSA-5crp-9r3c-p9vr",
+      "cve": "CVE-2024-21907",
+      "fixed_version": "13.0.1",
+      "location": "Smoke.csproj PackageReference; packages.lock.json type Direct; nuget/newtonsoft.json.12.0.1.nupkg",
+      "visible_to": [
+        "syft dotnet-packages-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "RestSharp",
+      "version": "106.11.7",
+      "ecosystem": "NuGet",
+      "osv": "GHSA-9pq7-rcxv-47vq",
+      "cve": "CVE-2021-27293",
+      "fixed_version": "106.11.8",
+      "location": "Smoke.csproj PackageReference; packages.lock.json type Direct; nuget/restsharp.106.11.7.nupkg",
+      "visible_to": [
+        "syft dotnet-packages-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "notes": "OSV records the fixed event as 106.11.8-alpha.0.13; the released fix is 106.11.8.",
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "SixLabors.ImageSharp",
+      "version": "2.1.5",
+      "ecosystem": "NuGet",
+      "osv": "GHSA-65x7-c272-7g7r",
+      "cve": "CVE-2024-27929",
+      "fixed_version": "2.1.7",
+      "other_advisories": [
+        "GHSA-5x7m-6737-26cr",
+        "GHSA-g85r-6x2q-45w7",
+        "GHSA-63p8-c4ww-9cg7",
+        "GHSA-qxrv-gp6x-rc23",
+        "GHSA-2cmq-823j-5qj8",
+        "GHSA-rxmq-m78w-7wmc",
+        "GHSA-gwg2-r3hj-4w44",
+        "GHSA-j3p4-wp97-rph4",
+        "GHSA-j9gm-c75j-xc9q",
+        "GHSA-jjfr-hcj7-qf5w",
+        "GHSA-wmxv-xphr-5c9g"
+      ],
+      "location": "packages.lock.json type Transitive (dependency of SixLabors.ImageSharp.Drawing 1.0.0); nuget/sixlabors.imagesharp.2.1.5.nupkg",
+      "transitive": true,
+      "via": "SixLabors.ImageSharp.Drawing 1.0.0 (clean OSV record)",
+      "visible_to": [
+        "syft dotnet-packages-lock cataloger",
+        "osv-scanner lockfile scan",
+        "grype"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in RotateLogs",
+      "file": "src/MaintenanceController.cs",
+      "function": "Smoke.MaintenanceController.RotateLogs",
+      "introduced_commit": "aed13b5c31e1595dfbc647c36ba3f6ee2bf50523",
+      "introduced_span": {
+        "start_line": 18,
+        "end_line": 18
+      },
+      "fixed_commit": "a13e7d0d20036b3e4d51dd003d785fb08c14a726",
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none (RotateLogs takes no argument and moves a fixed path with File.Move; no Process.Start remains)",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in ReadReport",
+      "file": "src/MaintenanceController.cs",
+      "function": "Smoke.MaintenanceController.ReadReport",
+      "introduced_commit": "0d35b6a7c57684dc6c4d9fd132617366ddb8b4e4",
+      "introduced_span": {
+        "start_line": 27,
+        "end_line": 28
+      },
+      "fixed_commit": "085171e480eeddd35c00628d97e467ceda65e53e",
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers Path.GetFileName at src/MaintenanceController.cs line 35 before Path.Combine and File.ReadAllText at line 36",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "SharpZipLib",
+      "ecosystem": "NuGet",
+      "vulnerable_version": "1.3.2",
+      "fixed_version": "1.3.3",
+      "osv": "GHSA-m22m-h4rf-pwq3",
+      "cve": "CVE-2021-32840",
+      "other_advisories": [
+        "GHSA-2x7h-96h5-rq84 / CVE-2021-32841",
+        "GHSA-mm6g-mmq6-53ff / CVE-2021-32842"
+      ],
+      "introduced_commit": "1cd6bc42648b16b2d5c1ba1f16e40915c85df700",
+      "fixed_commit": "a14812a81c3dc2c91a8f80fa2f0564afde291161",
+      "notes": "The upgrade commit also removes nuget/sharpziplib.1.3.2.nupkg from the vendored feed; the head lock file and feed hold only 1.3.3.",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "src/ShellHelpers.cs",
+      "function": "Smoke.ShellHelpers.WarmCache",
+      "span": {
+        "start_line": 15,
+        "end_line": 15
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.csharp-process-shell"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand: \"-c \" + \"sync\" is a compile-time constant, no source reaches the sink",
+        "location": {
+          "file": "src/ShellHelpers.cs",
+          "line": 15
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "src/ShellHelpers.cs",
+      "function": "Smoke.ShellHelpers.SetLogLevel",
+      "span": {
+        "start_line": 25,
+        "end_line": 25
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.csharp-process-shell"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "level >= 0 && level <= 3 dominates the sink, polarity true_branch, constrains_sink_operand; range_fact lower 0 upper 3 on the integer operand",
+        "location": {
+          "file": "src/ShellHelpers.cs",
+          "line": 23
+        }
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "src/ShellHelpers.cs",
+      "function": "Smoke.ShellHelpers.StatUpload",
+      "span": {
+        "start_line": 36,
+        "end_line": 36
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.csharp-process-shell"
+      ],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "Path.GetFileName dominates the only operand (safe); the executable is /usr/bin/stat, not a shell, and -- ends option parsing",
+        "location": {
+          "file": "src/ShellHelpers.cs",
+          "line": 35
+        }
+      },
+      "notes": "The sanitizer is a path sanitizer on a process argument, the same shape as the brief's path.basename example; the refutation rests on the sanitizer fact plus the absence of a shell.",
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "src/ShellHelpers.cs",
+      "function": "Smoke.ShellHelpers.LegacyShell",
+      "span": {
+        "start_line": 42,
+        "end_line": 42
+      },
+      "flagged_by": [
+        "appsec-review.review-signal.sink.csharp-process-shell"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: private static method with no callers and no entry point",
+        "location": {
+          "file": "src/ShellHelpers.cs",
+          "line": 40
+        }
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "src/MaintenanceController.cs",
+    "function": "Dispatch",
+    "qualified_name": "Smoke.MaintenanceController.Dispatch",
+    "start_line": 40,
+    "end_line": 102,
+    "cyclomatic": 25,
+    "decisions": {
+      "boolean": 8,
+      "if": 11,
+      "loop": 1,
+      "ternary": 4
+    },
+    "holds": "TP-C7",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/csharp-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "fixture_path_in_target": "src/Program.cs",
+    "line_numbers_moved": false,
+    "adjustment": null
+  },
+  "language_matrix": {
+    "languages": [
+      "C#"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "opengrep",
+      "syft",
+      "grype",
+      "osv-scanner"
+    ]
+  },
+  "history": {
+    "commits": 36,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-05-13",
+    "last_date": "2026-09-15",
+    "fix_commits": [
+      "a13e7d0d20036b3e4d51dd003d785fb08c14a726",
+      "085171e480eeddd35c00628d97e467ceda65e53e"
+    ],
+    "upgrade_commit": "a14812a81c3dc2c91a8f80fa2f0564afde291161",
+    "introducing_commits": {
+      "FX-C1": "aed13b5c31e1595dfbc647c36ba3f6ee2bf50523",
+      "FX-C2": "0d35b6a7c57684dc6c4d9fd132617366ddb8b4e4",
+      "FX-D1": "1cd6bc42648b16b2d5c1ba1f16e40915c85df700"
+    },
+    "hardening_review_commit": "f49d91d1ddd2961d7578d8151328126794d825f3",
+    "rename": {
+      "from": "src/Redirects.cs",
+      "to": "src/Navigation.cs",
+      "commit": "78db56e919b716f0e328d32d18b9fd0dcaf0fe23"
+    },
+    "revert": {
+      "reverted_commit": "dc8300efedd56af6b23832c1242ca1c4f2ee726d",
+      "revert_commit": "c7215e4333ab53a276a3fe51d74eae35898b4f60",
+      "reapply_commit": "a30f504c1e89eb8f6bc06209faaeb34f2129efd1"
+    },
+    "not_exploitable_commit": {
+      "commit": "59d75c3f432ac05bbd2d396e62d6b6022d984385",
+      "about": "FP-2"
+    },
+    "highest_churn_file": "src/MaintenanceController.cs",
+    "churn_top5": {
+      "src/MaintenanceController.cs": 17,
+      "Smoke.csproj": 7,
+      "src/ShellHelpers.cs": 5,
+      "packages.lock.json": 5,
+      "CHANGELOG.md": 5
+    },
+    "commits_over_three_files": [
+      "ed08867ee8b3c8fdc6228a5ecbfd18c3df407b44 (initial, 116 files)",
+      "801881616d5f1ec6aa86ba9c01c7620c78488dc2 (vendoring, 4 files)",
+      "f8c7563c21e578196c34b76606a8679ec14275cf (vendoring, 8 files)",
+      "a14812a81c3dc2c91a8f80fa2f0564afde291161 (vendoring upgrade, 5 files)"
+    ],
+    "security_md": true,
+    "changelog": true
+  },
+  "verification": {
+    "syft_reported": [
+      "Microsoft.NETCore.Platforms 5.0.0",
+      "Newtonsoft.Json 12.0.1",
+      "RestSharp 106.11.7",
+      "SharpZipLib 1.3.3",
+      "SixLabors.Fonts 1.0.0",
+      "SixLabors.ImageSharp 2.1.5",
+      "SixLabors.ImageSharp.Drawing 1.0.0",
+      "System.Runtime.CompilerServices.Unsafe 5.0.0",
+      "System.Text.Encoding.CodePages 5.0.0"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4"
+    ],
+    "semgrep_unflagged_false_positives": [],
+    "semgrep_check_id_as_reported": "rules.appsec-review.review-signal.sink.csharp-process-shell (the rules. prefix comes from the mounted config path /rules/review-signals.yml)",
+    "semgrep_total_findings_outside_vendored": 5
+  },
+  "expected_gaps": [
+    {
+      "gap": "only one mounted Semgrep rule reports C# constructs",
+      "reason": "rules/semgrep has a single csharp rule (csharp-process-shell) and rules/sei-cert has no csharp directory, so every false positive is a Process.Start shape and no pattern rule flags TP-C1..TP-C6, TP-C8 or TP-C9",
+      "affects": [
+        "FP-1",
+        "FP-2",
+        "FP-3",
+        "FP-4"
+      ]
+    },
+    {
+      "gap": "range_fact for FP-2 depends on the C# range export over an int parameter",
+      "reason": "the fixture's allocation_range case shows integral ranges are exported; the guard_fact alone refutes FP-2 if the range row is absent",
+      "affects": [
+        "FP-2"
+      ]
+    },
+    {
+      "gap": "CodeQL export of the open redirect, XXE and ReadReport sanitizer not verified",
+      "reason": "no review or CodeQL run was performed on this target; TP-C8, TP-C9 and FX-C2's fixed-state fact rest on CodeQL C# model support (cs/web/unvalidated-url-redirection, cs/xml/insecure-dtd-handling, TaintedPath GetFileName sanitizer), not on a recorded export",
+      "affects": [
+        "TP-C8",
+        "TP-C9",
+        "FX-C2"
+      ]
+    }
+  ],
+  "substitutions": [],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "887af65120b0395f1066bd5183017d00808b5b62"
+  }
+}

@@ -1,0 +1,694 @@
+{
+  "schema": "appsec-review/smoke-answer-key/1",
+  "language": "go",
+  "repository": "https://github.com/wsollers/appsec-review-smoke-go",
+  "tag": "v1.0.0",
+  "commit": "5f83d50620529d94a07ef0d1765462ada17f239e",
+  "build": {
+    "profile": "go",
+    "image": "audit-buildenv-go:local",
+    "command": "go build -o /scratch/bin/ ./...",
+    "environment": {
+      "GOFLAGS": "-mod=vendor",
+      "GOCACHE": "/scratch/gocache",
+      "GOPATH": "/scratch/go",
+      "HOME": "/scratch"
+    },
+    "elapsed_seconds": 5.3,
+    "expected_build_units": 1,
+    "notes": "One package main at the repository root (go.mod module github.com/wsollers/appsec-review-smoke-go, go 1.22 directive, toolchain go1.23.1). The repository is mounted read-only; the build writes only under /scratch. No requirement is imported, so vendor/ holds only modules.txt and the offline -mod=vendor build compiles no dependency. A first run with a cold image took 18.2 s, a second 5.3 s. Every commit from the second onwards builds offline the same way; gofmt -l and go vet are clean at the head."
+  },
+  "planted": [
+    {
+      "class": "true_positive_code",
+      "id": "TP-C1",
+      "cwe": "CWE-89",
+      "title": "SQL injection through the name parameter (fixture case sql_cross_function_flow)",
+      "file": "main.go",
+      "function": "lookup",
+      "span": {
+        "start_line": 41,
+        "end_line": 43
+      },
+      "source": {
+        "file": "main.go",
+        "function": "serve",
+        "line": 47,
+        "api": "FormValue"
+      },
+      "sink": {
+        "api": "Exec",
+        "line": 42
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C2",
+      "cwe": "CWE-78",
+      "title": "command injection through the name parameter",
+      "file": "main.go",
+      "function": "serve",
+      "span": {
+        "start_line": 49,
+        "end_line": 49
+      },
+      "source": {
+        "file": "main.go",
+        "function": "serve",
+        "line": 47,
+        "api": "FormValue"
+      },
+      "sink": {
+        "api": "Command",
+        "line": 49
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C3",
+      "cwe": "CWE-918",
+      "title": "server-side request forgery through the name parameter (fixture case ssrf_sink)",
+      "file": "main.go",
+      "function": "serve",
+      "span": {
+        "start_line": 52,
+        "end_line": 52
+      },
+      "source": {
+        "file": "main.go",
+        "function": "serve",
+        "line": 47,
+        "api": "FormValue"
+      },
+      "sink": {
+        "api": "Get",
+        "line": 52
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C4",
+      "cwe": "CWE-502",
+      "title": "deserialization of the request body with encoding/gob (fixture case deserialization_sink)",
+      "file": "main.go",
+      "function": "serve",
+      "span": {
+        "start_line": 53,
+        "end_line": 53
+      },
+      "source": {
+        "file": "main.go",
+        "function": "serve",
+        "line": 53,
+        "api": "Body"
+      },
+      "sink": {
+        "api": "NewDecoder",
+        "line": 53
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C5",
+      "cwe": "CWE-78",
+      "title": "command injection from argv and the environment (fixture case two_sources_one_command)",
+      "file": "main.go",
+      "function": "main",
+      "span": {
+        "start_line": 69,
+        "end_line": 70
+      },
+      "source": {
+        "file": "main.go",
+        "function": "main",
+        "line": 69,
+        "api": "os.Args / Getenv"
+      },
+      "sink": {
+        "api": "Command",
+        "line": 69
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C6",
+      "cwe": "CWE-117",
+      "title": "log injection through the user parameter of the audit op",
+      "file": "logging.go",
+      "function": "recordAccess",
+      "span": {
+        "start_line": 11,
+        "end_line": 13
+      },
+      "source": {
+        "file": "logging.go",
+        "function": "recordAccess",
+        "line": 12,
+        "api": "FormValue"
+      },
+      "sink": {
+        "api": "Printf",
+        "line": 12
+      },
+      "reached_from": {
+        "file": "admin.go",
+        "function": "adminHandler",
+        "line": 62
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_code",
+      "id": "TP-C7",
+      "cwe": "CWE-601",
+      "title": "open redirect through the next parameter of the go op",
+      "file": "admin.go",
+      "function": "adminHandler",
+      "span": {
+        "start_line": 69,
+        "end_line": 75
+      },
+      "source": {
+        "file": "admin.go",
+        "function": "adminHandler",
+        "line": 70,
+        "api": "FormValue"
+      },
+      "sink": {
+        "api": "Redirect",
+        "line": 74
+      },
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D1",
+      "package": "golang.org/x/text",
+      "version": "v0.3.0",
+      "ecosystem": "Go",
+      "osv": "GO-2020-0015",
+      "cve": "CVE-2020-14040",
+      "fixed_version": "v0.3.3",
+      "also": [
+        "GO-2021-0113 (CVE-2021-38561, fixed v0.3.7)",
+        "GO-2022-1059 (CVE-2022-32149, fixed v0.3.8)"
+      ],
+      "location": "go.mod line 9; go.sum; vendor/modules.txt",
+      "how_declared": "direct requirement, never imported",
+      "visible_to": [
+        "syft go-module cataloger (reported v0.3.0)",
+        "osv-scanner go.mod parser",
+        "source text"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D2",
+      "package": "github.com/tidwall/gjson",
+      "version": "v1.6.0",
+      "ecosystem": "Go",
+      "osv": "GO-2021-0059",
+      "cve": "CVE-2020-35380",
+      "fixed_version": "v1.6.4",
+      "also": [
+        "GO-2021-0054 (CVE-2020-36067, fixed v1.6.6)",
+        "GO-2022-0957 (CVE-2020-36066, fixed v1.6.5)",
+        "GO-2021-0265 (CVE-2021-42248/CVE-2021-42836, fixed v1.9.3)"
+      ],
+      "location": "go.mod line 8; go.sum; vendor/modules.txt",
+      "how_declared": "direct requirement, never imported",
+      "visible_to": [
+        "syft go-module cataloger (reported v1.6.0)",
+        "osv-scanner go.mod parser",
+        "source text"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "true_positive_dependency",
+      "id": "TP-D3",
+      "package": "gopkg.in/yaml.v2",
+      "version": "v2.2.2",
+      "ecosystem": "Go",
+      "osv": "GO-2020-0036",
+      "cve": "CVE-2019-11254",
+      "fixed_version": "v2.2.8",
+      "also": [
+        "GO-2021-0061 (CVE-2021-4235, fixed v2.2.3)",
+        "GO-2022-0956 (CVE-2022-3064, fixed v2.2.4)"
+      ],
+      "location": "go.mod line 10 (// indirect); go.sum; vendor/modules.txt",
+      "how_declared": "transitive: required by github.com/spf13/cobra v0.0.5 (selected by MVS, confirmed with go list -m all) and recorded in go.mod as an // indirect requirement, the form Go 1.17+ module graph pruning uses for transitive pins; never imported",
+      "visible_to": [
+        "syft go-module cataloger (reported v2.2.2)",
+        "osv-scanner go.mod parser",
+        "go.sum",
+        "source text"
+      ],
+      "not_visible_to": [],
+      "expected_disposition": "reported"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C1",
+      "cwe": "CWE-78",
+      "title": "command injection in runTool",
+      "file": "ops.go",
+      "function": "runTool",
+      "introduced_commit": "bfca32111ccd321a302befc360523dd344a41fc1",
+      "introduced_span": {
+        "start_line": 8,
+        "end_line": 10
+      },
+      "introduced_sink": {
+        "api": "Command",
+        "line": 9,
+        "detail": "exec.Command(\"/bin/sh\", \"-c\", \"/usr/libexec/smoke/\"+name).Run()"
+      },
+      "fixed_commit": "3ffe06083562874bbfa35c5b73697c583e8d3460",
+      "fixed_span": {
+        "start_line": 17,
+        "end_line": 27
+      },
+      "fix_kind": "sink_removed",
+      "fixed_state_fact": "none",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_code",
+      "id": "FX-C2",
+      "cwe": "CWE-22",
+      "title": "path traversal in readAsset",
+      "file": "ops.go",
+      "function": "readAsset",
+      "introduced_commit": "aa259c0049bb896617dfe747ffdb369c4e800df1",
+      "introduced_span": {
+        "start_line": 18,
+        "end_line": 20
+      },
+      "introduced_sink": {
+        "api": "ReadFile",
+        "line": 19,
+        "detail": "os.ReadFile(assetRoot + \"/\" + name)"
+      },
+      "fixed_commit": "b96ed3cdbe6293080a6d921a185a962266b20d13",
+      "fixed_span": {
+        "start_line": 31,
+        "end_line": 37
+      },
+      "fix_kind": "sanitizer_added",
+      "fixed_state_fact": "path_sanitizers filepath.Clean (ops.go line 32) and guard_fact dominating strings.HasPrefix (ops.go line 33) before os.ReadFile (line 36); gosec G703 still flags line 36, which the facts must squelch",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "fixed_dependency",
+      "id": "FX-D1",
+      "package": "github.com/gorilla/websocket",
+      "ecosystem": "Go",
+      "vulnerable_version": "v1.4.0",
+      "fixed_version": "v1.5.3",
+      "osv": "GO-2020-0019",
+      "cve": "CVE-2020-27813",
+      "advisory_fixed_version": "v1.4.1",
+      "introduced_commit": "545742e311f6e04adadc67c7396eeccf8416283a",
+      "introduced_span": {
+        "file": "go.mod",
+        "start_line": 6,
+        "end_line": 6
+      },
+      "fixed_commit": "42eb97da6e41acd68d409486e8e3396b3b9ff057",
+      "notes": "v1.4.1, the advisory's fixed version, carries GO-2026-6278 (fixed v1.5.3), so the upgrade goes to v1.5.3, which has no OSV record; the upgrade commit body cites CVE-2020-27813 and GO-2020-0019.",
+      "expected_disposition": "reported-as-fixed"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-1",
+      "file": "store.go",
+      "function": "purgeExpired",
+      "span": {
+        "start_line": 40,
+        "end_line": 43
+      },
+      "sink_line": 41,
+      "flagged_by": [
+        "appsec-review.review-signal.sink.go-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "constant operand: sessionRetentionDays is a package constant (store.go line 12); no dataflow_path reaches the sink",
+        "location": {
+          "file": "store.go",
+          "line": 12
+        }
+      },
+      "other_tools": {
+        "gosec": []
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-2",
+      "file": "store.go",
+      "function": "recentUsers",
+      "span": {
+        "start_line": 21,
+        "end_line": 27
+      },
+      "sink_line": 23,
+      "flagged_by": [
+        "appsec-review.review-signal.sink.go-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "guard_fact",
+        "detail": "n >= 0 && n < 100 dominates the sink, polarity true_branch, constrains_sink_operand; range_fact integral upper 99 on the strconv.Itoa operand",
+        "location": {
+          "file": "store.go",
+          "line": 22
+        }
+      },
+      "other_tools": {
+        "gosec": [
+          "G701",
+          "G202"
+        ]
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-3",
+      "file": "store.go",
+      "function": "userByID",
+      "span": {
+        "start_line": 30,
+        "end_line": 37
+      },
+      "sink_line": 35,
+      "flagged_by": [
+        "appsec-review.review-signal.sink.go-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "path_sanitizers",
+        "detail": "the concatenated operand is strconv.Itoa of an integer parsed by strconv.Atoi under a dominating err != nil check (lines 31-34), so no request text reaches the statement; whether the graph export records the numeric round-trip as a path_sanitizers row is not verified",
+        "location": {
+          "file": "store.go",
+          "line": 31
+        }
+      },
+      "other_tools": {
+        "gosec": [
+          "G701",
+          "G202"
+        ]
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-4",
+      "file": "store.go",
+      "function": "legacyLookup",
+      "span": {
+        "start_line": 46,
+        "end_line": 49
+      },
+      "sink_line": 47,
+      "flagged_by": [
+        "appsec-review.review-signal.sink.go-sql-string-concatenation"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: legacyLookup has no callers and no entry point, so no dataflow_path reaches it",
+        "location": {
+          "file": "store.go",
+          "line": 46
+        }
+      },
+      "other_tools": {
+        "gosec": [
+          "G202"
+        ]
+      },
+      "expected_disposition": "squelched"
+    },
+    {
+      "class": "false_positive",
+      "id": "FP-5",
+      "file": "devtls.go",
+      "function": "insecureClient",
+      "span": {
+        "start_line": 12,
+        "end_line": 14
+      },
+      "sink_line": 13,
+      "flagged_by": [
+        "appsec-review.review-signal.privilege_shift.go-tls-verification-disabled"
+      ],
+      "refuted_by": {
+        "fact_family": "no_dataflow_path",
+        "detail": "dead code: insecureClient has no callers and no entry point, so no call path or dataflow_path reaches the tls.Config literal",
+        "location": {
+          "file": "devtls.go",
+          "line": 12
+        }
+      },
+      "other_tools": {
+        "gosec": [
+          "G402"
+        ]
+      },
+      "expected_disposition": "squelched"
+    }
+  ],
+  "complexity": {
+    "file": "admin.go",
+    "function": "adminHandler",
+    "cyclomatic": 24,
+    "decisions": {
+      "if": 12,
+      "case": 8,
+      "boolean": 3
+    },
+    "span": {
+      "start_line": 16,
+      "end_line": 82
+    },
+    "holds": "TP-C7",
+    "expected_top_rank": true,
+    "cyclomatic_high_risk_share_above_zero": true,
+    "notes": "67 lines including the closing brace, slightly over the brief's 'about sixty'"
+  },
+  "graph_facts": {
+    "fixture": "tests/fixtures/graph/codeql_export/go-synthetic",
+    "expected_facts_file": "expected-facts.json",
+    "fixture_file_in_target": "main.go",
+    "fixture_sha256": "b470e8f76948ce2f1bf6f1efe12e0cd45c2ce7a526f30fd8b144576250cc0c13",
+    "line_numbers_moved": false,
+    "adjustment": null,
+    "notes": "go.mod's module path changed from gosynthetic to github.com/wsollers/appsec-review-smoke-go; the go directive stays 1.22. The fixture's sanitized os.Open (line 50) and guarded strings.Repeat (lines 55-58) are exportable facts that no mounted Semgrep rule reports."
+  },
+  "language_matrix": {
+    "languages": [
+      "Go"
+    ],
+    "tools": [
+      "codeql",
+      "semgrep",
+      "opengrep",
+      "gosec",
+      "syft",
+      "grype",
+      "osv-scanner"
+    ]
+  },
+  "history": {
+    "commits": 34,
+    "authors": [
+      "Ada Lindqvist <ada@example.com>",
+      "Bao Nguyen <bao@example.com>",
+      "Cleo Marsh <cleo@example.com>"
+    ],
+    "first_date": "2025-06-03",
+    "last_date": "2026-10-12",
+    "fix_commits": [
+      "3ffe06083562874bbfa35c5b73697c583e8d3460",
+      "b96ed3cdbe6293080a6d921a185a962266b20d13"
+    ],
+    "upgrade_commit": "42eb97da6e41acd68d409486e8e3396b3b9ff057",
+    "upgrade_changelog_commit": "9a407ba9ae7f67c22ca15a88e990e5e1d35c480d",
+    "hardening_review_commit": "5f9c95e5b6bff065779a555de97cda3432ed6a0f",
+    "rename": {
+      "from": "audit.go",
+      "to": "logging.go",
+      "commit": "e663215dc5121e88166a0cd0c446df13a874780c"
+    },
+    "revert": {
+      "reverted_commit": "24e930386aff1222784fad977698911d2bcc6543",
+      "revert_commit": "db4ad634c2a0dc4696d42a592467ce69ef9e37c5",
+      "reapply_commit": "4cb21a4dc1cf640ab1842d0a9dcd14ec7d3ba16b"
+    },
+    "not_exploitable_commit": {
+      "commit": "7234e0eaf2deea3094c4089f117b28c3c62f60d1",
+      "about": "FP-2"
+    },
+    "introducing_commits": {
+      "FX-C1": "bfca32111ccd321a302befc360523dd344a41fc1",
+      "FX-C2": "aa259c0049bb896617dfe747ffdb369c4e800df1",
+      "FX-D1": "545742e311f6e04adadc67c7396eeccf8416283a"
+    },
+    "highest_churn_file": "admin.go",
+    "churn_top5": {
+      "admin.go": 16,
+      "store.go": 6,
+      "CHANGELOG.md": 5,
+      "ops.go": 4,
+      "go.mod": 4
+    },
+    "security_md": true,
+    "changelog": true,
+    "merges": 0,
+    "commits_over_three_files": [
+      "1f6ea61ef8380970f05f65c5f30ede5be8f6d01d (initial commit, 105 files: tools/ history steps)"
+    ]
+  },
+  "verification": {
+    "report": "~/smoke-work/go/verify/report.md",
+    "syft_reported": [
+      "github.com/gorilla/websocket v1.5.3 (go-module)",
+      "github.com/spf13/cobra v0.0.5 (go-module)",
+      "github.com/tidwall/gjson v1.6.0 (go-module)",
+      "golang.org/x/text v0.3.0 (go-module)",
+      "gopkg.in/yaml.v2 v2.2.2 (go-module)"
+    ],
+    "semgrep_findings_outside_vendor": [
+      "devtls.go:13 appsec-review.review-signal.privilege_shift.go-tls-verification-disabled (FP-5)",
+      "main.go:42 appsec-review.review-signal.sink.go-sql-string-concatenation (TP-C1)",
+      "store.go:23 appsec-review.review-signal.sink.go-sql-string-concatenation (FP-2)",
+      "store.go:35 appsec-review.review-signal.sink.go-sql-string-concatenation (FP-3)",
+      "store.go:41 appsec-review.review-signal.sink.go-sql-string-concatenation (FP-1)",
+      "store.go:47 appsec-review.review-signal.sink.go-sql-string-concatenation (FP-4)"
+    ],
+    "semgrep_flagged_false_positives": [
+      "FP-1",
+      "FP-2",
+      "FP-3",
+      "FP-4",
+      "FP-5"
+    ],
+    "semgrep_unflagged_false_positives": [],
+    "gosec": {
+      "image": "appsec-review/tool-gosec:2.29.0",
+      "command": "gosec -fmt json -out /scratch/gosec.json -quiet ./... (--network none, user 10001, GOFLAGS=-mod=vendor)",
+      "issues": 30,
+      "planted_items_flagged": {
+        "TP-C1": [
+          "G701",
+          "G202",
+          "G104"
+        ],
+        "TP-C2": [
+          "G702",
+          "G204",
+          "G104"
+        ],
+        "TP-C3": [
+          "G704",
+          "G107",
+          "G104"
+        ],
+        "TP-C5": [
+          "G702",
+          "G204"
+        ],
+        "TP-C6": [
+          "G706"
+        ],
+        "TP-C7": [
+          "G710"
+        ],
+        "FX-C2 fixed state (ops.go:36)": [
+          "G703"
+        ],
+        "FP-2": [
+          "G701",
+          "G202"
+        ],
+        "FP-3": [
+          "G701",
+          "G202"
+        ],
+        "FP-4": [
+          "G202"
+        ],
+        "FP-5": [
+          "G402"
+        ]
+      },
+      "planted_items_not_flagged": [
+        "TP-C4 (gob decode)",
+        "FP-1 (constant operand, gosec propagates the constant)"
+      ],
+      "other": [
+        "main.go:50 G703 on the filepath.Clean-sanitized os.Open (fixture sanitized_path)",
+        "main.go:58 G115/G109 on the fixture narrowing conversion",
+        "main.go:72 G114",
+        "several G104 unhandled errors"
+      ]
+    }
+  },
+  "expected_gaps": [
+    {
+      "gap": "no mounted Semgrep rule reports the fixture's guarded strings.Repeat or sanitized os.Open",
+      "reason": "rules/semgrep/ has only two Go rules (go-sql-string-concatenation, go-tls-verification-disabled) and rules/sei-cert/rules has no go directory; those fixture cases remain exportable facts (guards, ranges, path_sanitizers) without a pattern finding to squelch",
+      "affects": []
+    },
+    {
+      "gap": "FP-3's refuting fact depends on the export modelling the strconv.Atoi/Itoa numeric round-trip as a sanitizer",
+      "reason": "not verified against a graph export; the dominating err != nil guard (store.go line 31-34) is the fallback guard_fact",
+      "affects": [
+        "FP-3"
+      ]
+    },
+    {
+      "gap": "vendor/ holds only modules.txt",
+      "reason": "no requirement is imported, so go mod vendor writes no sources; the planted modules are visible only through go.mod, go.sum and vendor/modules.txt, which Syft reads (see verification.syft_reported)",
+      "affects": [
+        "TP-D1",
+        "TP-D2",
+        "TP-D3",
+        "FX-D1"
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "planned": "github.com/dgrijalva/jwt-go v3.2.0 (candidate)",
+      "actual": "github.com/tidwall/gjson v1.6.0",
+      "reason": "GO-2020-0017 for jwt-go has no fixed version in OSV (the fix lives in the forked module github.com/golang-jwt/jwt); gjson v1.6.0 has GO-2021-0059 with fixed v1.6.4"
+    },
+    {
+      "planned": "github.com/gin-gonic/gin v1.6.3 (candidate)",
+      "actual": "github.com/spf13/cobra v0.0.5 as the vehicle for the transitive gopkg.in/yaml.v2 v2.2.2",
+      "reason": "gin v1.6.3's transitive requirements (golang/protobuf v1.3.3, ugorji/go/codec v1.1.7, validator/v10 v10.2.0, json-iterator/go v1.1.9) have no OSV records and gin requires gopkg.in/yaml.v2 v2.2.8, which would have bumped the transitive pin; cobra v0.0.5 requires yaml.v2 v2.2.2 and has no OSV record itself"
+    },
+    {
+      "planned": "github.com/gorilla/websocket v1.4.0 upgraded to v1.4.1 (the advisory's fixed version)",
+      "actual": "upgraded to v1.5.3",
+      "reason": "v1.4.1 carries GO-2026-6278 (fixed v1.5.3); the head lockfile must be clean for the fixed dependency"
+    }
+  ],
+  "published": {
+    "date": "2026-11-13",
+    "tag": "v1.0.0",
+    "commit": "5f83d50620529d94a07ef0d1765462ada17f239e"
+  }
+}
